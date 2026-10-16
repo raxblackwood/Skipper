@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="6dp"
+    android:paddingHorizontal="4dp">
+
+    <TextView
+        android:id="@+id/tvLogTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="15:42:01"
+        android:textColor="#8E8B99"
+        android:fontFamily="monospace"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/tvLogBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:background="#2E2838"
+        android:textColor="#BB86FC"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:text="AnonChat" />
+
+    <TextView
+        android:id="@+id/tvLogMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:textColor="@color/on_surface"
+        android:textSize="12sp"
+        android:text="Trigger: Instant Skip detected -> Clicked 'New partner'" />
+
+</LinearLayout>
