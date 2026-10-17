@@ -16,6 +16,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_ANONCHAT_CLICK_DELAY = "anonchat_click_delay"
         private const val KEY_ANONCHAT_COOLDOWN = "anonchat_cooldown"
         private const val KEY_ANONCHAT_CUSTOM_PKG = "anonchat_custom_pkg"
+        private const val KEY_ANONCHAT_AUTO_SKIP_MALE = "anonchat_auto_skip_male"
 
         // Chatous Keys
         private const val KEY_CHATOUS_ENABLED = "chatous_enabled"
@@ -35,6 +36,10 @@ class PreferencesManager(context: Context) {
     var isAnonChatOnlyInstantSkip: Boolean
         get() = prefs.getBoolean(KEY_ANONCHAT_ONLY_INSTANT, true)
         set(value) = prefs.edit().putBoolean(KEY_ANONCHAT_ONLY_INSTANT, value).apply()
+
+    var isAnonChatAutoSkipMale: Boolean
+        get() = prefs.getBoolean(KEY_ANONCHAT_AUTO_SKIP_MALE, true)
+        set(value) = prefs.edit().putBoolean(KEY_ANONCHAT_AUTO_SKIP_MALE, value).apply()
 
     var anonChatClickDelayMs: Long
         get() = prefs.getLong(KEY_ANONCHAT_CLICK_DELAY, 350L)

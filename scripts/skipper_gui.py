@@ -175,41 +175,97 @@ class SkipperEngine:
         return False
 
     def _evaluate_anonchat(self, all_nodes, all_texts, screen_h):
-        # Safeguard 1: Active Chat Input Guard
-        for node in all_nodes:
-            if "EditText" in node.attrib.get("class", ""):
-                return False
+        # AI Male Bio Patterns
+        MALE_PATTERNS = [
+            r"\b\d{1,2}\s*[mM]\b",
+            r"\b[mM]\s*\d{1,2}\b",
+            r"\b[mM]\s*[/|-]\s*\d{1,2}\b",
+            r"\b\d{1,2}\s*[/|-]\s*[mM]\b",
+            r"[\[\(]\s*[mM]\s*[\]\)]",
+            r"\b[mM]\s+(ind|india|delhi|mumbai|bangalore|blr|pune|hyd|kolkata|chennai|noida|gurgaon)\b",
+            r"\b[mM](ale)?\s+here\b",
+            r"\b(guy|boy|dude)\s+here\b",
+            r"\b(male|boy|guy|dude|man)\b",
+            r"\bhe\s*/\s*him\b",
+            r"\b(m4f|m\s*4\s*f|m\s+for\s+f)\b",
+            r"\b(looking\s+for|want|need)\s+(a\s+)?(f|female|girl|woman|gf)\b"
+        ]
+        FEMALE_PATTERNS = [
+            r"\b\d{1,2}\s*[fF]\b",
+            r"\b[fF]\s*\d{1,2}\b",
+            r"\b(female|girl|woman|lady)\b",
+            r"\bshe\s*/\s*her\b"
+        ]
 
-        # Safeguard 2: Disconnect Confirmation Guard
-        if not any("Chat was ended" in t for t in all_texts):
-            return False
-
-        # Safeguard 3: Screen 4 (Instant Skip) vs Screen 3
-        if self.instant_only:
-            has_profile_card = any("About partner" in t or "Chat starts" in t or "Interests" in t for t in all_texts)
+        # Case 1: Partner already disconnected
+        if any("Chat was ended" in t for t in all_texts):
             has_timestamps = any("Seen" in t or re.search(r"\b\d{1,2}:\d{2}\s*(AM|PM)?\b", t, re.I) for t in all_texts)
-            if not has_profile_card or has_timestamps:
+            if self.instant_only and has_timestamps:
                 return False
 
-        # Safeguard 4: Locate TRUE Action Button "New partner"
-        target_click = None
-        for node in all_nodes:
-            text = node.attrib.get("text", "")
-            if "New partner" in text:
-                bounds = parse_bounds(node.attrib.get("bounds", ""))
-                if bounds:
-                    x1, y1, x2, y2 = bounds
-                    if y1 > (screen_h * 0.55):
-                        target_click = ((x1 + x2) // 2, (y1 + y2) // 2)
-                        break
+            for node in all_nodes:
+                text = node.attrib.get("text", "")
+                if "New partner" in text:
+                    bounds = parse_bounds(node.attrib.get("bounds", ""))
+                    if bounds and bounds[1] > (screen_h * 0.55):
+                        cx = (bounds[0] + bounds[2]) // 2
+                        cy = (bounds[1] + bounds[3]) // 2
+                        self.log_callback("INFO", "Partner skipped! Clicking 'New partner'...")
+                        time.sleep(self.click_delay)
+                        run_adb(["shell", "input", "tap", str(cx), str(cy)])
+                        self.log_callback("SUCCESS", "Skipped to next partner search.")
+                        return True
 
-        if target_click:
-            cx, cy = target_click
-            self.log_callback("INFO", f"Instant skip detected! Waiting {int(self.click_delay * 1000)}ms...")
-            time.sleep(self.click_delay)
-            run_adb(["shell", "input", "tap", str(cx), str(cy)])
-            self.log_callback("SUCCESS", f"Clicked 'New partner' at ({cx}, {cy})")
-            return True
+        # Case 2: AI Male-Bio Detection (Fresh match who hasn't disconnected)
+        has_profile_card = any("About partner" in t or "Chat starts" in t for t in all_texts)
+        has_timestamps = any("Seen" in t or re.search(r"\b\d{1,2}:\d{2}\s*(AM|PM)?\b", t, re.I) for t in all_texts)
+
+        if has_profile_card and not has_timestamps:
+            bio_text = " ".join([t for t in all_texts if "anon.chat" not in t and "New partner" not in t])
+
+            is_female = any(re.search(pat, bio_text, re.I) for pat in FEMALE_PATTERNS)
+            matched_male = [pat for pat in MALE_PATTERNS if re.search(pat, bio_text, re.I)]
+
+            if matched_male and not is_female:
+                self.log_callback("INFO", f"AI detected Male bio: {matched_male[0]}. Auto-skipping...")
+                time.sleep(self.click_delay)
+
+                # Step A: Check if 'New partner' button is visible
+                for node in all_nodes:
+                    if "New partner" in node.attrib.get("text", ""):
+                        bounds = parse_bounds(node.attrib.get("bounds", ""))
+                        if bounds and bounds[1] > (screen_h * 0.55):
+                            cx = (bounds[0] + bounds[2]) // 2
+                            cy = (bounds[1] + bounds[3]) // 2
+                            run_adb(["shell", "input", "tap", str(cx), str(cy)])
+                            self.log_callback("SUCCESS", "Clicked 'New partner'.")
+                            return True
+
+                # Step B: Check if 'End chat' button is visible
+                for node in all_nodes:
+                    if "End chat" in node.attrib.get("text", ""):
+                        bounds = parse_bounds(node.attrib.get("bounds", ""))
+                        if bounds:
+                            cx = (bounds[0] + bounds[2]) // 2
+                            cy = (bounds[1] + bounds[3]) // 2
+                            run_adb(["shell", "input", "tap", str(cx), str(cy)])
+                            self.log_callback("INFO", "Clicked 'End chat'.")
+                            return True
+
+                # Step C: Tap top-right action icon (!) or Android back button
+                for node in all_nodes:
+                    bounds = parse_bounds(node.attrib.get("bounds", ""))
+                    if bounds:
+                        x1, y1, x2, y2 = bounds
+                        if y1 < (screen_h * 0.15) and x2 > 800:
+                            cx = (x1 + x2) // 2
+                            cy = (y1 + y2) // 2
+                            run_adb(["shell", "input", "tap", str(cx), str(cy)])
+                            self.log_callback("INFO", "Tapped top action menu to end chat.")
+                            return True
+
+                run_adb(["shell", "input", "keyevent", "4"])
+                return True
 
         return False
 

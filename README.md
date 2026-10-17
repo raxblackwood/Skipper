@@ -13,10 +13,11 @@ In apps like **anon.chat**:
 3. **Screen 3 (Partner Skips After Conversation)**: Chat ends after talking. "Chat was ended by your partner" appears with 3 bottom buttons: `[Report]`, `[End chat]`, `[New partner]`.
 4. **Screen 4 (Instant Skip on Profile)**: When someone disconnects immediately upon seeing your profile info card (`About partner`, `Interests`) before any chatting occurs.
 
-### 1. AnonChat Automator
-- Auto-skips when partner immediately disconnects on your profile (Screen 4).
-- Distinguishes instant skips from active conversations.
-- Safeguards against false clicks on header titles and chat messages.
+### 1. AnonChat Automator & On-Device AI Male-Bio Skip 🧠
+- **On-Device AI Gender Intelligence**: Analyzes partner bio text in real time using multi-pattern NLP scoring (`M22`, `18M`, `M here`, `male`, `guy`, `looking for f/female`, `M Ind/city`).
+- **Active Skip Trigger**: Automatically skips male partners as soon as their profile arrives on Screen 4, even if they haven't disconnected on their own.
+- **Female Protection Guarantee**: If female indicators (`F20`, `female`, `girl`) or undetermined gender are detected, Skipper leaves the chat active for you.
+- **Instant Disconnect Skip**: Auto-clicks "New partner" whenever someone skips on you immediately.
 
 ### 2. Chatous Male-Skipper ⚡ (New!)
 - Automatically skips **Male profiles** upon matching (Screen 4).

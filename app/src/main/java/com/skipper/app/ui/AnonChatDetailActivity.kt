@@ -20,6 +20,7 @@ class AnonChatDetailActivity : AppCompatActivity() {
 
         // Populate current values
         binding.switchAnonChatEnabled.isChecked = prefs.isAnonChatEnabled
+        binding.switchAutoSkipMale.isChecked = prefs.isAnonChatAutoSkipMale
 
         if (prefs.isAnonChatOnlyInstantSkip) {
             binding.rbInstantSkipOnly.isChecked = true
@@ -36,11 +37,13 @@ class AnonChatDetailActivity : AppCompatActivity() {
 
         binding.btnSave.setOnClickListener {
             val isEnabled = binding.switchAnonChatEnabled.isChecked
+            val autoSkipMale = binding.switchAutoSkipMale.isChecked
             val isOnlyInstant = binding.rbInstantSkipOnly.isChecked
             val actionDelay = binding.etActionDelay.text.toString().toLongOrNull() ?: 350L
             val cooldown = binding.etCooldownDelay.text.toString().toLongOrNull() ?: 2000L
 
             prefs.isAnonChatEnabled = isEnabled
+            prefs.isAnonChatAutoSkipMale = autoSkipMale
             prefs.isAnonChatOnlyInstantSkip = isOnlyInstant
             prefs.anonChatClickDelayMs = actionDelay
             prefs.anonChatCooldownMs = cooldown
