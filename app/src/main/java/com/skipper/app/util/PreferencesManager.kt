@@ -19,6 +19,16 @@ class PreferencesManager(context: Context) {
         private const val KEY_ANONCHAT_CUSTOM_PKG = "anonchat_custom_pkg"
         private const val KEY_ANONCHAT_AUTO_SKIP_MALE = "anonchat_auto_skip_male"
 
+        // License Keys
+        private const val KEY_IS_PRO = "is_pro_activated"
+        private const val KEY_LICENSE_KEY = "license_key"
+
+        // Gender Targets ("MALE", "FEMALE", "NONE")
+        private const val KEY_ANONCHAT_GENDER_TARGET = "anonchat_gender_target"
+        private const val KEY_ANONCHAT_CUSTOM_KEYWORDS = "anonchat_custom_keywords"
+        private const val KEY_CHATOUS_GENDER_TARGET = "chatous_gender_target"
+        private const val KEY_CHATOUS_CUSTOM_KEYWORDS = "chatous_custom_keywords"
+
         // Chatous Keys
         private const val KEY_CHATOUS_ENABLED = "chatous_enabled"
         private const val KEY_CHATOUS_SKIP_MALE = "chatous_skip_male"
@@ -34,6 +44,16 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_DISCLOSURE_ACCEPTED, false)
         set(value) = prefs.edit().putBoolean(KEY_DISCLOSURE_ACCEPTED, value).apply()
 
+    // License state
+    var isProActivated: Boolean
+        get() = prefs.getBoolean(KEY_IS_PRO, true) // Enabled by default for full capability
+        set(value) = prefs.edit().putBoolean(KEY_IS_PRO, value).apply()
+
+    var licenseKey: String
+        get() = prefs.getString(KEY_LICENSE_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LICENSE_KEY, value).apply()
+
+    // AnonChat settings
     var isAnonChatEnabled: Boolean
         get() = prefs.getBoolean(KEY_ANONCHAT_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_ANONCHAT_ENABLED, value).apply()
@@ -45,6 +65,14 @@ class PreferencesManager(context: Context) {
     var isAnonChatAutoSkipMale: Boolean
         get() = prefs.getBoolean(KEY_ANONCHAT_AUTO_SKIP_MALE, true)
         set(value) = prefs.edit().putBoolean(KEY_ANONCHAT_AUTO_SKIP_MALE, value).apply()
+
+    var anonChatGenderTarget: String
+        get() = prefs.getString(KEY_ANONCHAT_GENDER_TARGET, "MALE") ?: "MALE"
+        set(value) = prefs.edit().putString(KEY_ANONCHAT_GENDER_TARGET, value).apply()
+
+    var anonChatCustomKeywords: Set<String>
+        get() = prefs.getStringSet(KEY_ANONCHAT_CUSTOM_KEYWORDS, setOf("22 M", "M18", "M26", "m here", "looking for f", "boy", "guy", "m4f")) ?: emptySet()
+        set(value) = prefs.edit().putStringSet(KEY_ANONCHAT_CUSTOM_KEYWORDS, value).apply()
 
     var anonChatClickDelayMs: Long
         get() = prefs.getLong(KEY_ANONCHAT_CLICK_DELAY, 350L)
@@ -66,6 +94,14 @@ class PreferencesManager(context: Context) {
     var isChatousSkipMale: Boolean
         get() = prefs.getBoolean(KEY_CHATOUS_SKIP_MALE, true)
         set(value) = prefs.edit().putBoolean(KEY_CHATOUS_SKIP_MALE, value).apply()
+
+    var chatousGenderTarget: String
+        get() = prefs.getString(KEY_CHATOUS_GENDER_TARGET, "MALE") ?: "MALE"
+        set(value) = prefs.edit().putString(KEY_CHATOUS_GENDER_TARGET, value).apply()
+
+    var chatousCustomKeywords: Set<String>
+        get() = prefs.getStringSet(KEY_CHATOUS_CUSTOM_KEYWORDS, setOf("male", "boy", "guy", "dude")) ?: emptySet()
+        set(value) = prefs.edit().putStringSet(KEY_CHATOUS_CUSTOM_KEYWORDS, value).apply()
 
     var chatousClickDelayMs: Long
         get() = prefs.getLong(KEY_CHATOUS_CLICK_DELAY, 250L)

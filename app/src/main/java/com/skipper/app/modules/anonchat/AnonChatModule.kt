@@ -41,7 +41,8 @@ class AnonChatModule(
     override fun getAppSection(): AppSection {
         val rules = mutableListOf<String>()
         if (prefs.isAnonChatAutoSkipMale) {
-            rules.add("AI Male-Bio Auto-Skip")
+            val target = if (prefs.anonChatGenderTarget == "FEMALE") "Female" else "Male"
+            rules.add("AI $target-Bio Auto-Skip")
         }
         if (prefs.isAnonChatOnlyInstantSkip) {
             rules.add("Instant Disconnect Skip (Screen 4)")
@@ -89,7 +90,7 @@ class AnonChatModule(
         }
 
         // =========================================================================
-        // SCENARIO 2: AI Male-Bio Detection (When partner matches & does not skip)
+        // SCENARIO 2: AI Bio & Keyword Detection (When partner matches & does not skip)
         // =========================================================================
         if (prefs.isAnonChatAutoSkipMale) {
             val hasProfileCard = NodeMatcher.hasText(rootNode, "About partner") ||
@@ -97,41 +98,48 @@ class AnonChatModule(
 
             if (hasProfileCard && !hasConversationHistory(rootNode)) {
                 val bioText = extractBioAndProfileText(rootNode)
-                val report = GenderClassifier.classify(bioText)
+                val targetGender = prefs.anonChatGenderTarget
+                val customKeywords = prefs.anonChatCustomKeywords
+                val report = GenderClassifier.classify(
+                    rawText = bioText,
+                    customKeywords = customKeywords,
+                    targetGender = targetGender
+                )
 
-                when (report.result) {
-                    GenderResult.MALE -> {
-                        Logger.log(
-                            appName = name,
-                            action = "AI Male Detected",
-                            details = "Matched male keywords: ${report.matchedTokens} in bio (\"$bioText\"). Auto-skipping...",
-                            status = TriggerStatus.INFO
-                        )
-                        executeSkipActiveMale(rootNode, service)
-                        return
-                    }
-                    GenderResult.FEMALE -> {
-                        Logger.log(
-                            appName = name,
-                            action = "Female Profile Kept",
-                            details = "Protected female match: ${report.matchedTokens}. Enjoy chatting!",
-                            status = TriggerStatus.SUCCESS
-                        )
-                        return
-                    }
-                    GenderResult.UNDETERMINED -> {
-                        // Gender not specified in bio -> Leave untouched
-                        return
-                    }
+                val shouldSkip = if (targetGender == "FEMALE") {
+                    report.result == GenderResult.FEMALE
+                } else {
+                    report.result == GenderResult.MALE
+                }
+
+                if (shouldSkip) {
+                    val label = if (targetGender == "FEMALE") "AI Female/Keyword Detected" else "AI Male/Keyword Detected"
+                    Logger.log(
+                        appName = name,
+                        action = label,
+                        details = "Matched tokens: ${report.matchedTokens} in bio (\"$bioText\"). Auto-skipping...",
+                        status = TriggerStatus.INFO
+                    )
+                    executeSkipActivePartner(rootNode, service)
+                    return
+                } else if (report.result != GenderResult.UNDETERMINED) {
+                    val oppositeLabel = if (targetGender == "FEMALE") "Male Profile Kept" else "Female Profile Kept"
+                    Logger.log(
+                        appName = name,
+                        action = oppositeLabel,
+                        details = "Protected non-target match: ${report.matchedTokens}. Enjoy chatting!",
+                        status = TriggerStatus.SUCCESS
+                    )
+                    return
                 }
             }
         }
     }
 
     /**
-     * Executes skipping an active male partner who hasn't disconnected on their own.
+     * Executes skipping an active partner who matches skip criteria but hasn't disconnected.
      */
-    private fun executeSkipActiveMale(
+    private fun executeSkipActivePartner(
         rootNode: AccessibilityNodeInfo,
         service: SkipperAccessibilityService
     ) {

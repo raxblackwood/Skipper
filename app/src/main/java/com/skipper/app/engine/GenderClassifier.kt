@@ -71,12 +71,28 @@ object GenderClassifier {
     )
 
     /**
-     * Analyzes raw bio/profile text and classifies gender.
+     * Analyzes raw bio/profile text, evaluates gender and custom keywords.
+     * @param rawText the bio/profile string
+     * @param customKeywords user-defined keywords to skip
+     * @param targetGender "MALE" (skip male), "FEMALE" (skip female), or "NONE"
      */
-    fun classify(rawText: String): ClassificationReport {
+    fun classify(
+        rawText: String,
+        customKeywords: Set<String> = emptySet(),
+        targetGender: String = "MALE"
+    ): ClassificationReport {
         val clean = rawText.replace("\n", " ").trim()
         if (clean.isEmpty()) {
             return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
+        }
+
+        // 1. Check custom keywords first
+        val matchedCustom = mutableListOf<String>()
+        for (kw in customKeywords) {
+            val trimmed = kw.trim()
+            if (trimmed.isNotEmpty() && clean.contains(trimmed, ignoreCase = true)) {
+                matchedCustom.add(trimmed)
+            }
         }
 
         val matchedMale = mutableListOf<String>()
@@ -93,9 +109,36 @@ object GenderClassifier {
             }
         }
 
-        // Safeguard 1: If female indicators are present, protect it!
+        // If custom keywords matched, prioritize skip!
+        if (matchedCustom.isNotEmpty()) {
+            return ClassificationReport(
+                result = if (targetGender == "FEMALE") GenderResult.FEMALE else GenderResult.MALE,
+                matchedTokens = matchedCustom,
+                confidence = 1.0f
+            )
+        }
+
+        // Target Gender = FEMALE: user wants to skip females!
+        if (targetGender.equals("FEMALE", ignoreCase = true)) {
+            if (matchedFemale.isNotEmpty()) {
+                return ClassificationReport(
+                    result = GenderResult.FEMALE,
+                    matchedTokens = matchedFemale,
+                    confidence = 0.95f
+                )
+            }
+            if (matchedMale.isNotEmpty()) {
+                return ClassificationReport(
+                    result = GenderResult.MALE,
+                    matchedTokens = matchedMale,
+                    confidence = 0.95f
+                )
+            }
+            return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
+        }
+
+        // Default Target Gender = MALE: user wants to skip males!
         if (matchedFemale.isNotEmpty()) {
-            // Even if "female" matches, check if it was inside "looking for female"
             val wasLookingForFemale = matchedMale.any { it.contains("female", ignoreCase = true) || it.contains("girl", ignoreCase = true) }
             val onlyFemaleFoundWasTargetOfLooking = matchedFemale.all { it.equals("female", ignoreCase = true) || it.equals("girl", ignoreCase = true) } && wasLookingForFemale
 
@@ -108,7 +151,6 @@ object GenderClassifier {
             }
         }
 
-        // Safeguard 2: Positive Male Identification
         if (matchedMale.isNotEmpty()) {
             val confidence = minOf(1.0f, 0.7f + (matchedMale.size * 0.15f))
             return ClassificationReport(
@@ -118,7 +160,6 @@ object GenderClassifier {
             )
         }
 
-        // Safeguard 3: If undetermined, do NOT guess.
         return ClassificationReport(
             result = GenderResult.UNDETERMINED,
             matchedTokens = emptyList(),

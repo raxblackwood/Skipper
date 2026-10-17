@@ -32,8 +32,9 @@ class ChatousModule(
     override fun isEnabled(): Boolean = prefs.isChatousEnabled
 
     override fun getAppSection(): AppSection {
+        val target = if (prefs.chatousGenderTarget == "FEMALE") "Female" else "Male"
         val ruleSummary = if (prefs.isChatousSkipMale) {
-            "Trigger: Auto-skip Male profiles (Screen 4)"
+            "Trigger: Auto-skip $target profiles (Screen 4)"
         } else {
             "Monitoring only"
         }
@@ -87,20 +88,40 @@ class ChatousModule(
         // Screen 4 is confirmed!
         val allTexts = NodeMatcher.collectAllText(rootNode)
 
-        // Gender Detection: Check if profile is Male
-        // Regex \bMale\b matches "Male" but specifically does NOT match "Female"
+        val targetGender = prefs.chatousGenderTarget
+        val customKeywords = prefs.chatousCustomKeywords
+
         val maleRegex = Regex("""\bMale\b""", RegexOption.IGNORE_CASE)
+        val femaleRegex = Regex("""\bFemale\b""", RegexOption.IGNORE_CASE)
+
         val hasMaleWord = allTexts.any { maleRegex.containsMatchIn(it) }
         val hasMaleSymbol = allTexts.any { it.contains("♂") }
-
         val isMale = hasMaleWord || hasMaleSymbol
 
-        if (!isMale) {
-            // Profile is Female or unspecified - Keep connection!
+        val hasFemaleWord = allTexts.any { femaleRegex.containsMatchIn(it) }
+        val hasFemaleSymbol = allTexts.any { it.contains("♀") }
+        val isFemale = hasFemaleWord || hasFemaleSymbol
+
+        // Check custom keywords
+        val matchedCustom = customKeywords.filter { kw ->
+            val trimmed = kw.trim()
+            trimmed.isNotEmpty() && allTexts.any { it.contains(trimmed, ignoreCase = true) }
+        }
+
+        val shouldSkip = if (matchedCustom.isNotEmpty()) {
+            true
+        } else if (targetGender == "FEMALE") {
+            isFemale
+        } else {
+            isMale
+        }
+
+        if (!shouldSkip) {
+            val label = if (targetGender == "FEMALE") "Male/Non-targeted profile" else "Female/Non-targeted profile"
             Logger.log(
                 appName = name,
                 action = "Partner Matched",
-                details = "Non-male profile found. Skipping aborted - ready to chat!",
+                details = "$label found. Skipping aborted - ready to chat!",
                 status = TriggerStatus.INFO
             )
             return
@@ -116,7 +137,7 @@ class ChatousModule(
             Logger.log(
                 appName = name,
                 action = "Button Guard",
-                details = "Male profile detected, but 'SKIP' button node could not be safely targeted.",
+                details = "Target profile detected, but 'SKIP' button node could not be safely targeted.",
                 status = TriggerStatus.BLOCKED_BY_SAFEGUARD
             )
             return
@@ -126,10 +147,18 @@ class ChatousModule(
         lastTriggerTime = now
         val delay = prefs.chatousClickDelayMs
 
+        val triggerReason = if (matchedCustom.isNotEmpty()) {
+            "Matched custom keywords: $matchedCustom"
+        } else if (targetGender == "FEMALE") {
+            "Female Profile Detected"
+        } else {
+            "Male Profile Detected"
+        }
+
         Logger.log(
             appName = name,
-            action = "Male Profile Detected",
-            details = "Found Male match on Screen 4. Auto-clicking 'SKIP' in ${delay}ms...",
+            action = triggerReason,
+            details = "Trigger on Screen 4. Auto-clicking 'SKIP' in ${delay}ms...",
             status = TriggerStatus.INFO
         )
 
