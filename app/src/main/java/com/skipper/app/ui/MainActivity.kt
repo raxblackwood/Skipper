@@ -38,8 +38,15 @@ class MainActivity : AppCompatActivity() {
 
         // Accessibility Service check & button
         binding.btnEnableService.setOnClickListener {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivity(intent)
+            if (!prefs.isAccessibilityDisclosureAccepted) {
+                ProminentDisclosureDialog(this, prefs) {
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                }.show()
+            } else {
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                startActivity(intent)
+            }
         }
 
         SkipperAccessibilityService.isServiceConnected.observe(this) { isConnected ->

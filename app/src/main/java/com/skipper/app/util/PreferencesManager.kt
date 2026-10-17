@@ -9,6 +9,7 @@ class PreferencesManager(context: Context) {
 
     companion object {
         private const val KEY_SERVICE_MASTER_SWITCH = "master_switch_enabled"
+        private const val KEY_DISCLOSURE_ACCEPTED = "disclosure_accepted"
         
         // AnonChat Keys
         private const val KEY_ANONCHAT_ENABLED = "anonchat_enabled"
@@ -28,6 +29,10 @@ class PreferencesManager(context: Context) {
     var isMasterSwitchEnabled: Boolean
         get() = prefs.getBoolean(KEY_SERVICE_MASTER_SWITCH, true)
         set(value) = prefs.edit().putBoolean(KEY_SERVICE_MASTER_SWITCH, value).apply()
+
+    var isAccessibilityDisclosureAccepted: Boolean
+        get() = prefs.getBoolean(KEY_DISCLOSURE_ACCEPTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_DISCLOSURE_ACCEPTED, value).apply()
 
     var isAnonChatEnabled: Boolean
         get() = prefs.getBoolean(KEY_ANONCHAT_ENABLED, true)
