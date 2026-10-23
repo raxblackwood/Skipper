@@ -12,6 +12,7 @@ class AnonChatDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAnonChatDetailBinding
     private val currentKeywords = mutableSetOf<String>()
+    private val currentNeverSkipKeywords = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +33,7 @@ class AnonChatDetailActivity : AppCompatActivity() {
             binding.rbSkipMaleAnonChat.isChecked = true
         }
 
-        // Custom Keywords Chips
+        // Custom Skip Keywords Chips
         currentKeywords.addAll(prefs.anonChatCustomKeywords)
         populateChips()
 
@@ -41,10 +42,27 @@ class AnonChatDetailActivity : AppCompatActivity() {
             if (kw.isNotEmpty()) {
                 if (!currentKeywords.contains(kw)) {
                     currentKeywords.add(kw)
-                    addChip(kw)
+                    addChip(kw, isNeverSkip = false)
                     binding.etNewKeyword.setText("")
                 } else {
                     Toast.makeText(this, "Keyword already exists", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Never-Skip (Protected Whitelist) Chips
+        currentNeverSkipKeywords.addAll(prefs.anonChatNeverSkipKeywords)
+        populateNeverSkipChips()
+
+        binding.btnAddNeverSkipKeyword.setOnClickListener {
+            val kw = binding.etNewNeverSkipKeyword.text?.toString()?.trim() ?: ""
+            if (kw.isNotEmpty()) {
+                if (!currentNeverSkipKeywords.contains(kw)) {
+                    currentNeverSkipKeywords.add(kw)
+                    addChip(kw, isNeverSkip = true)
+                    binding.etNewNeverSkipKeyword.setText("")
+                } else {
+                    Toast.makeText(this, "Protected word already exists", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -74,6 +92,7 @@ class AnonChatDetailActivity : AppCompatActivity() {
             prefs.isAnonChatAutoSkipMale = autoSkipMale
             prefs.anonChatGenderTarget = targetGender
             prefs.anonChatCustomKeywords = currentKeywords.toSet()
+            prefs.anonChatNeverSkipKeywords = currentNeverSkipKeywords.toSet()
             prefs.isAnonChatOnlyInstantSkip = isOnlyInstant
             prefs.anonChatClickDelayMs = actionDelay
             prefs.anonChatCooldownMs = cooldown
@@ -86,19 +105,35 @@ class AnonChatDetailActivity : AppCompatActivity() {
     private fun populateChips() {
         binding.chipGroupKeywords.removeAllViews()
         for (kw in currentKeywords) {
-            addChip(kw)
+            addChip(kw, isNeverSkip = false)
         }
     }
 
-    private fun addChip(keyword: String) {
+    private fun populateNeverSkipChips() {
+        binding.chipGroupNeverSkipKeywords.removeAllViews()
+        for (kw in currentNeverSkipKeywords) {
+            addChip(kw, isNeverSkip = true)
+        }
+    }
+
+    private fun addChip(keyword: String, isNeverSkip: Boolean) {
         val chip = Chip(this).apply {
             text = keyword
             isCloseIconVisible = true
             setOnCloseIconClickListener {
-                binding.chipGroupKeywords.removeView(this)
-                currentKeywords.remove(keyword)
+                if (isNeverSkip) {
+                    binding.chipGroupNeverSkipKeywords.removeView(this)
+                    currentNeverSkipKeywords.remove(keyword)
+                } else {
+                    binding.chipGroupKeywords.removeView(this)
+                    currentKeywords.remove(keyword)
+                }
             }
         }
-        binding.chipGroupKeywords.addView(chip)
+        if (isNeverSkip) {
+            binding.chipGroupNeverSkipKeywords.addView(chip)
+        } else {
+            binding.chipGroupKeywords.addView(chip)
+        }
     }
 }

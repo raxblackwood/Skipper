@@ -26,6 +26,7 @@ class PreferencesManager(context: Context) {
         // Gender Targets ("MALE", "FEMALE", "NONE")
         private const val KEY_ANONCHAT_GENDER_TARGET = "anonchat_gender_target"
         private const val KEY_ANONCHAT_CUSTOM_KEYWORDS = "anonchat_custom_keywords"
+        private const val KEY_ANONCHAT_NEVER_SKIP_KEYWORDS = "anonchat_never_skip_keywords"
         private const val KEY_CHATOUS_GENDER_TARGET = "chatous_gender_target"
 
         // Chatous Keys
@@ -70,8 +71,12 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_ANONCHAT_GENDER_TARGET, value).apply()
 
     var anonChatCustomKeywords: Set<String>
-        get() = prefs.getStringSet(KEY_ANONCHAT_CUSTOM_KEYWORDS, setOf("22 M", "M18", "M26", "m here", "looking for f", "boy", "guy", "m4f")) ?: emptySet()
+        get() = prefs.getStringSet(KEY_ANONCHAT_CUSTOM_KEYWORDS, setOf("m", "male", "boy", "guy", "dude", "looking for f", "m4f")) ?: emptySet()
         set(value) = prefs.edit().putStringSet(KEY_ANONCHAT_CUSTOM_KEYWORDS, value).apply()
+
+    var anonChatNeverSkipKeywords: Set<String>
+        get() = prefs.getStringSet(KEY_ANONCHAT_NEVER_SKIP_KEYWORDS, setOf("female", "f", "girl", "woman", "lady", "she", "her", "queen", "gal")) ?: setOf("female", "f", "girl", "woman", "lady", "she", "her", "queen", "gal")
+        set(value) = prefs.edit().putStringSet(KEY_ANONCHAT_NEVER_SKIP_KEYWORDS, value).apply()
 
     var anonChatClickDelayMs: Long
         get() = prefs.getLong(KEY_ANONCHAT_CLICK_DELAY, 350L)

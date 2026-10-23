@@ -102,9 +102,11 @@ class AnonChatModule(
                 val bioText = extractBioAndProfileText(rootNode)
                 val targetGender = prefs.anonChatGenderTarget
                 val customKeywords = prefs.anonChatCustomKeywords
+                val neverSkipKeywords = prefs.anonChatNeverSkipKeywords
                 val report = GenderClassifier.classify(
                     rawText = bioText,
                     customKeywords = customKeywords,
+                    nonSkipKeywords = neverSkipKeywords,
                     targetGender = targetGender
                 )
 

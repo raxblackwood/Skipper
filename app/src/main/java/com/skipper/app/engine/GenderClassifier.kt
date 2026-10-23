@@ -77,14 +77,50 @@ object GenderClassifier {
     )
 
     /**
-     * Analyzes raw bio/profile text, evaluates gender and custom keywords.
+     * Intelligently checks if a keyword matches within text.
+     * Special handling for "m" and "f" so the user does NOT need to enter M18, M21, M23 individually.
+     */
+    fun matchesKeyword(keyword: String, text: String): Boolean {
+        val trimmed = keyword.trim()
+        if (trimmed.isEmpty()) return false
+
+        // "M" automatically expands to M, M21, M23, 21M, M here, M from Delhi, etc.
+        if (trimmed.equals("m", ignoreCase = true)) {
+            val mRegex = Regex(
+                """\b([mM]|\d{1,2}\s*[mM]|[mM]\s*\d{1,2}|[mM]\s*[/|-]\s*\d{1,2}|\d{1,2}\s*[/|-]\s*[mM]|[mM]\s+here|[mM]\s+(from|in)|[mM]\s+(ind|delhi|mumbai|bangalore|blr|pune|hyd|kolkata|chennai|noida|gurgaon|up|mp|pb|punjab|haryana|gujarat))\b""",
+                RegexOption.IGNORE_CASE
+            )
+            return mRegex.containsMatchIn(text)
+        }
+
+        // "F" automatically expands to F, F18, F21, 21F, F here, F from Delhi, etc.
+        if (trimmed.equals("f", ignoreCase = true)) {
+            val fRegex = Regex(
+                """\b([fF]|\d{1,2}\s*[fF]|[fF]\s*\d{1,2}|[fF]\s*[/|-]\s*\d{1,2}|\d{1,2}\s*[/|-]\s*[fF]|[fF]\s+here|[fF]\s+(from|in)|[fF]\s+(ind|delhi|mumbai|bangalore|blr|pune|hyd|kolkata|chennai|noida|gurgaon))\b""",
+                RegexOption.IGNORE_CASE
+            )
+            return fRegex.containsMatchIn(text)
+        }
+
+        val kwRegex = try {
+            Regex("""\b${Regex.escape(trimmed)}\b""", RegexOption.IGNORE_CASE)
+        } catch (e: Exception) {
+            Regex(Regex.escape(trimmed), RegexOption.IGNORE_CASE)
+        }
+        return kwRegex.containsMatchIn(text)
+    }
+
+    /**
+     * Analyzes raw bio/profile text, evaluates skip keywords and rechecks against non-skip (never-skip) words.
      * @param rawText the bio/profile string
-     * @param customKeywords user-defined keywords to skip
+     * @param customKeywords user-defined keywords to skip (e.g. "m", "male", "seller")
+     * @param nonSkipKeywords user-defined words that MUST NEVER be skipped (e.g. "female", "f", "girl")
      * @param targetGender "MALE" (skip male), "FEMALE" (skip female), or "NONE"
      */
     fun classify(
         rawText: String,
         customKeywords: Set<String> = emptySet(),
+        nonSkipKeywords: Set<String> = setOf("female", "f", "girl", "woman", "lady", "she", "her", "queen", "gal"),
         targetGender: String = "MALE"
     ): ClassificationReport {
         val clean = rawText.replace("\n", " ").trim()
@@ -92,7 +128,7 @@ object GenderClassifier {
             return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
         }
 
-        // 1. Evaluate male and female patterns first
+        // 1. Evaluate male and female built-in pattern matches
         val matchedMale = mutableListOf<String>()
         for (pattern in MALE_PATTERNS) {
             pattern.find(clean)?.let { match ->
@@ -107,84 +143,79 @@ object GenderClassifier {
             }
         }
 
-        // 2. Check custom keywords with strict whole-word boundaries (\b)
-        // This guarantees that keywords like "male" or "m" will NEVER match inside "female"!
+        // 2. Evaluate custom skip keywords
         val matchedCustom = mutableListOf<String>()
         for (kw in customKeywords) {
-            val trimmed = kw.trim()
-            if (trimmed.isEmpty()) continue
-            try {
-                val kwRegex = Regex("""\b${Regex.escape(trimmed)}\b""", RegexOption.IGNORE_CASE)
-                kwRegex.find(clean)?.let { match ->
-                    matchedCustom.add(match.value)
-                }
-            } catch (e: Exception) {
-                // If regex compilation fails, fallback to exact word match
-                val words = clean.split(Regex("""\s+"""))
-                if (words.any { it.equals(trimmed, ignoreCase = true) }) {
-                    matchedCustom.add(trimmed)
+            if (matchesKeyword(kw, clean)) {
+                matchedCustom.add(kw.trim())
+            }
+        }
+
+        // 3. RECHECK with Non-Skip (Never-Skip) protected words
+        val matchedNonSkip = mutableListOf<String>()
+        for (kw in nonSkipKeywords) {
+            if (matchesKeyword(kw, clean)) {
+                // Safeguard: make sure the non-skip word wasn't inside "looking for [kw]" by a male
+                val isSeeking = Regex(
+                    """\b(looking\s+for|want|need|search(ing)?\s+for)\s+(a\s+)?${Regex.escape(kw.trim())}\b""",
+                    RegexOption.IGNORE_CASE
+                ).containsMatchIn(clean)
+                if (!isSeeking) {
+                    matchedNonSkip.add(kw.trim())
                 }
             }
         }
 
-        // Determine if this profile is genuinely female
-        val hasFemaleIndicator = matchedFemale.isNotEmpty()
-        val wasLookingForFemale = matchedMale.any {
-            it.contains("female", ignoreCase = true) ||
-            it.contains("girl", ignoreCase = true) ||
-            it.contains("woman", ignoreCase = true) ||
-            it.contains("chick", ignoreCase = true) ||
-            it.contains("gf", ignoreCase = true)
-        }
-        val isDefiniteFemale = hasFemaleIndicator && !wasLookingForFemale
-
-        // Target Gender = FEMALE: user explicitly wants to skip females!
-        if (targetGender.equals("FEMALE", ignoreCase = true)) {
-            if (isDefiniteFemale || matchedCustom.isNotEmpty()) {
-                val tokens = (matchedFemale + matchedCustom).distinct()
+        // 4. Decision Engine with Recheck Veto
+        if (targetGender.equals("MALE", ignoreCase = true)) {
+            // RECHECK: If any non-skip (female/protected) word matched, VETO skip!
+            if (matchedNonSkip.isNotEmpty() || (matchedFemale.isNotEmpty() && !matchedMale.any { it.contains("female", ignoreCase = true) || it.contains("girl", ignoreCase = true) })) {
+                val nonSkipTokens = (matchedNonSkip + matchedFemale).distinct()
                 return ClassificationReport(
                     result = GenderResult.FEMALE,
-                    matchedTokens = if (tokens.isNotEmpty()) tokens else listOf("Target Female"),
+                    matchedTokens = if (nonSkipTokens.isNotEmpty()) nonSkipTokens else listOf("Protected Profile"),
                     confidence = 1.0f
                 )
             }
-            if (matchedMale.isNotEmpty()) {
+
+            // No non-skip words found: proceed with skip if skip keywords or male patterns matched!
+            val allMatchedMale = (matchedCustom + matchedMale).distinct()
+            if (allMatchedMale.isNotEmpty()) {
+                val confidence = minOf(1.0f, 0.75f + (allMatchedMale.size * 0.15f))
                 return ClassificationReport(
                     result = GenderResult.MALE,
-                    matchedTokens = matchedMale,
-                    confidence = 0.95f
+                    matchedTokens = allMatchedMale,
+                    confidence = confidence
                 )
             }
-            return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
+
+            return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0.0f)
         }
 
-        // Target Gender = MALE (Default): user wants to skip males!
-        // SAFEGUARD 1: ABSOLUTE FEMALE PROTECTION
-        // If female indicators are present, protect it at all costs! Never allow custom keywords to override a genuine female!
-        if (isDefiniteFemale) {
-            return ClassificationReport(
-                result = GenderResult.FEMALE,
-                matchedTokens = matchedFemale,
-                confidence = 1.0f
-            )
+        if (targetGender.equals("FEMALE", ignoreCase = true)) {
+            // RECHECK: If any non-skip (male/protected) word matched, VETO skip!
+            if (matchedNonSkip.isNotEmpty()) {
+                return ClassificationReport(
+                    result = GenderResult.MALE,
+                    matchedTokens = matchedNonSkip,
+                    confidence = 1.0f
+                )
+            }
+
+            // No non-skip words found: proceed with skip if skip keywords or female patterns matched!
+            val allMatchedFemale = (matchedCustom + matchedFemale).distinct()
+            if (allMatchedFemale.isNotEmpty()) {
+                val confidence = minOf(1.0f, 0.75f + (allMatchedFemale.size * 0.15f))
+                return ClassificationReport(
+                    result = GenderResult.FEMALE,
+                    matchedTokens = allMatchedFemale,
+                    confidence = confidence
+                )
+            }
+
+            return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0.0f)
         }
 
-        // SAFEGUARD 2: Skip on matched custom keywords or male patterns
-        val allMatchedMale = (matchedCustom + matchedMale).distinct()
-        if (allMatchedMale.isNotEmpty()) {
-            val confidence = minOf(1.0f, 0.75f + (allMatchedMale.size * 0.15f))
-            return ClassificationReport(
-                result = GenderResult.MALE,
-                matchedTokens = allMatchedMale,
-                confidence = confidence
-            )
-        }
-
-        // SAFEGUARD 3: If undetermined, do NOT guess.
-        return ClassificationReport(
-            result = GenderResult.UNDETERMINED,
-            matchedTokens = emptyList(),
-            confidence = 0.0f
-        )
+        return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0.0f)
     }
 }

@@ -105,6 +105,18 @@ def generate_key_for_device(device_id: str) -> str:
     return f"SKIP-{p1}-{p2}-{p3}"
 
 
+def matches_keyword(kw: str, text: str) -> bool:
+    trimmed = kw.strip()
+    if not trimmed:
+        return False
+    if trimmed.lower() == "m":
+        pat = r"\b([mM]|\d{1,2}\s*[mM]|[mM]\s*\d{1,2}|[mM]\s*[/|-]\s*\d{1,2}|\d{1,2}\s*[/|-]\s*[mM]|[mM]\s+here|[mM]\s+(from|in)|[mM]\s+(ind|delhi|mumbai|bangalore|blr|pune|hyd|kolkata|chennai|noida|gurgaon))\b"
+        return bool(re.search(pat, text, re.I))
+    if trimmed.lower() == "f":
+        pat = r"\b([fF]|\d{1,2}\s*[fF]|[fF]\s*\d{1,2}|[fF]\s*[/|-]\s*\d{1,2}|\d{1,2}\s*[/|-]\s*[fF]|[fF]\s+here|[fF]\s+(from|in))\b"
+        return bool(re.search(pat, text, re.I))
+    return bool(re.search(r"\b" + re.escape(trimmed) + r"\b", text, re.I))
+
 class SkipperEngine:
     def __init__(self, log_callback):
         self.log_callback = log_callback
@@ -112,17 +124,19 @@ class SkipperEngine:
         self.selected_app = "chatous"
         self.target_gender = "MALE"
         self.custom_keywords = []
+        self.non_skip_keywords = ["female", "f", "girl", "woman", "lady", "she", "her", "queen", "gal"]
         self.instant_only = True
         self.click_delay = 0.25
         self.cooldown = 1.5
         self.thread = None
 
-    def start(self, selected_app, target_gender, custom_keywords, instant_only, click_delay, cooldown):
+    def start(self, selected_app, target_gender, custom_keywords, non_skip_keywords, instant_only, click_delay, cooldown):
         if self.is_running:
             return
         self.selected_app = selected_app
         self.target_gender = target_gender
-        self.custom_keywords = [k.strip().lower() for k in custom_keywords if k.strip()]
+        self.custom_keywords = [k.strip() for k in custom_keywords if k.strip()]
+        self.non_skip_keywords = [k.strip() for k in non_skip_keywords if k.strip()]
         self.instant_only = instant_only
         self.click_delay = click_delay
         self.cooldown = cooldown
@@ -276,15 +290,16 @@ class SkipperEngine:
         if has_profile_card:
             bio_text = " ".join([t for t in all_texts if "anon.chat" not in t and "New partner" not in t])
 
-            matched_custom = [kw for kw in self.custom_keywords if re.search(r"\b" + re.escape(kw) + r"\b", bio_text, re.I)]
-            is_female = any(re.search(pat, bio_text, re.I) for pat in FEMALE_PATTERNS)
+            matched_non_skip = [kw for kw in self.non_skip_keywords if matches_keyword(kw, bio_text)]
+            matched_custom = [kw for kw in self.custom_keywords if matches_keyword(kw, bio_text)]
+            is_female = bool(matched_non_skip) or any(re.search(pat, bio_text, re.I) for pat in FEMALE_PATTERNS)
             matched_male = [pat for pat in MALE_PATTERNS if re.search(pat, bio_text, re.I)]
 
             should_skip = False
             reason = ""
 
             if self.target_gender == "MALE":
-                # Female protection first
+                # Recheck: Veto if any non-skip word matched
                 if is_female and not any(re.search(r"\b(looking for|want|need)\b.*(female|girl)", bio_text, re.I)):
                     should_skip = False
                 elif matched_custom:
@@ -342,7 +357,8 @@ class SkipperAppUI:
         self.license_file = os.path.join(os.path.expanduser("~"), ".skipper_license")
         self.is_pro = self._check_stored_license()
 
-        self.custom_keywords = ["22 M", "M18", "M26", "m here", "looking for f", "boy", "guy", "m4f"]
+        self.custom_keywords = ["m", "male", "boy", "guy", "dude", "looking for f", "m4f"]
+        self.non_skip_keywords = ["female", "f", "girl", "woman", "lady", "she", "her", "queen", "gal"]
 
         self.engine = SkipperEngine(self.add_log)
 
@@ -547,6 +563,7 @@ class SkipperAppUI:
                 selected_app=selected_app,
                 target_gender=target_gender,
                 custom_keywords=self.custom_keywords,
+                non_skip_keywords=self.non_skip_keywords,
                 instant_only=True,
                 click_delay=delay,
                 cooldown=cooldown
