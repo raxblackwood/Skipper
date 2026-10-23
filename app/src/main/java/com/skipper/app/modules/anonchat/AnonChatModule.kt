@@ -121,10 +121,16 @@ class AnonChatModule(
                     Logger.log(
                         appName = name,
                         action = label,
-                        details = "Matched tokens: ${report.matchedTokens} in bio (\"$bioText\"). Auto-skipping...",
+                        details = "Matched tokens: ${report.matchedTokens} in bio (\"$bioText\"). Auto-skipping to new partner...",
                         status = TriggerStatus.INFO
                     )
-                    executeSkipActivePartner(rootNode, service)
+                    val newPartnerButton = locateBottomNewPartnerButton(rootNode, service)
+                        ?: service.rootInActiveWindow?.let { locateBottomNewPartnerButton(it, service) }
+                    if (newPartnerButton != null) {
+                        executeClickNewPartner(newPartnerButton, service, label)
+                    } else {
+                        Logger.log(name, "Warning", "Could not locate 'New partner' button to skip.", TriggerStatus.INFO)
+                    }
                     return
                 } else if (report.result != GenderResult.UNDETERMINED) {
                     val oppositeLabel = if (targetGender == "FEMALE") "Male Profile Kept" else "Female Profile Kept"
@@ -138,83 +144,6 @@ class AnonChatModule(
                 }
             }
         }
-    }
-
-    /**
-     * Executes skipping an active partner who matches skip criteria but hasn't disconnected.
-     * In AnonChat, to end an active chat, we MUST click "End chat" (NOT "New partner").
-     */
-    private fun executeSkipActivePartner(
-        rootNode: AccessibilityNodeInfo,
-        service: SkipperAccessibilityService
-    ) {
-        isExecutingAction = true
-        lastTriggerTime = System.currentTimeMillis()
-        val delay = prefs.anonChatClickDelayMs
-
-        handler.postDelayed({
-            try {
-                val freshRoot = service.rootInActiveWindow ?: rootNode
-
-                // Step 1: In an active chat, find and click the "End chat" button
-                val endChatNodes = NodeMatcher.findNodes(freshRoot) { node ->
-                    val text = node.text?.toString() ?: node.contentDescription?.toString()
-                    text != null && (text.trim().equals("End chat", ignoreCase = true) ||
-                                     text.contains("End chat", ignoreCase = true) ||
-                                     text.contains("Leave chat", ignoreCase = true))
-                }
-                val endChatTarget = endChatNodes.lastOrNull()?.let { NodeMatcher.findClickableTarget(it) ?: it }
-
-                if (endChatTarget != null) {
-                    performClickSafely(endChatTarget, service)
-                    Logger.log(name, "Clicked 'End chat'", "Ending chat with non-matching partner.", TriggerStatus.INFO)
-
-                    // Step 1b: If AnonChat displays a confirmation dialog, click "End chat" again
-                    handler.postDelayed({
-                        try {
-                            val dialogRoot = service.rootInActiveWindow
-                            if (dialogRoot != null) {
-                                val confirmNodes = NodeMatcher.findNodes(dialogRoot) { n ->
-                                    val t = n.text?.toString() ?: n.contentDescription?.toString()
-                                    t != null && t.trim().equals("End chat", ignoreCase = true)
-                                }
-                                confirmNodes.firstOrNull()?.let {
-                                    val target = NodeMatcher.findClickableTarget(it) ?: it
-                                    performClickSafely(target, service)
-                                    Logger.log(name, "Confirmed 'End chat'", "Confirmed exit dialog.", TriggerStatus.INFO)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            // Dialog did not appear
-                        }
-                    }, 350L)
-                    return@postDelayed
-                }
-
-                // Step 2: Fallback via top-right action icon (!) or Android Back action
-                val displayWidth = service.resources.displayMetrics.widthPixels
-                val displayHeight = service.resources.displayMetrics.heightPixels
-
-                val topActionNodes = NodeMatcher.findNodes(freshRoot) { node ->
-                    val bounds = Rect()
-                    node.getBoundsInScreen(bounds)
-                    bounds.top < displayHeight * 0.15 && bounds.right > displayWidth * 0.70 &&
-                            (node.isClickable || node.className?.contains("Image") == true)
-                }
-                val topAction = topActionNodes.firstOrNull()?.let { NodeMatcher.findClickableTarget(it) ?: it }
-                if (topAction != null) {
-                    performClickSafely(topAction, service)
-                    Logger.log(name, "Action Icon Triggered", "Opening end chat menu for target partner.", TriggerStatus.INFO)
-                } else {
-                    service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                    Logger.log(name, "Back Action Triggered", "Prompting end chat for target partner.", TriggerStatus.INFO)
-                }
-            } catch (e: Exception) {
-                Logger.log(name, "Error", "Exception skipping partner: ${e.message}", TriggerStatus.ERROR)
-            } finally {
-                isExecutingAction = false
-            }
-        }, delay)
     }
 
     private fun executeClickNewPartner(
@@ -235,6 +164,33 @@ class AnonChatModule(
                 val clicked = performClickSafely(target, service)
                 if (clicked) {
                     Logger.log(name, "Clicked 'New partner'", "Successfully transitioned to next search.", TriggerStatus.SUCCESS)
+
+                    // If AnonChat displays a confirmation dialog asking to confirm finding a new partner:
+                    handler.postDelayed({
+                        try {
+                            val dialogRoot = service.rootInActiveWindow
+                            if (dialogRoot != null) {
+                                val confirmCandidates = NodeMatcher.findNodes(dialogRoot) { n ->
+                                    val t = n.text?.toString() ?: n.contentDescription?.toString()
+                                    t != null && (t.trim().equals("New partner", ignoreCase = true) ||
+                                                  t.trim().equals("Yes", ignoreCase = true) ||
+                                                  t.trim().equals("OK", ignoreCase = true) ||
+                                                  t.trim().equals("Skip", ignoreCase = true) ||
+                                                  t.trim().equals("Confirm", ignoreCase = true))
+                                }
+                                confirmCandidates.firstOrNull()?.let {
+                                    val confirmTarget = NodeMatcher.findClickableTarget(it) ?: it
+                                    performClickSafely(confirmTarget, service)
+                                    Logger.log(name, "Confirmed skip", "Confirmed new partner dialog.", TriggerStatus.INFO)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Dialog did not appear
+                        } finally {
+                            isExecutingAction = false
+                        }
+                    }, 350L)
+                    return@postDelayed
                 }
             } catch (e: Exception) {
                 Logger.log(name, "Error", "Exception clicking 'New partner': ${e.message}", TriggerStatus.ERROR)

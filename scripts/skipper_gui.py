@@ -314,33 +314,21 @@ class SkipperEngine:
                     reason = "Female bio indicators"
 
             if should_skip:
-                self.log_callback("INFO", f"AI detected {reason}. Auto-skipping...")
+                self.log_callback("INFO", f"AI detected {reason}. Auto-skipping to new partner...")
                 time.sleep(self.click_delay)
 
-                # Step A: In active chat, MUST click 'End chat' first
+                # Click bottom 'New partner' button to skip to the next partner
                 for node in all_nodes:
-                    if "End chat" in node.attrib.get("text", ""):
+                    text = node.attrib.get("text", "") or node.attrib.get("content-desc", "")
+                    if "New partner" in text:
                         bounds = parse_bounds(node.attrib.get("bounds", ""))
-                        if bounds:
+                        if bounds and bounds[1] > (screen_h * 0.55):
                             cx = (bounds[0] + bounds[2]) // 2
                             cy = (bounds[1] + bounds[3]) // 2
                             run_adb(["shell", "input", "tap", str(cx), str(cy)])
-                            self.log_callback("INFO", "Clicked 'End chat'.")
+                            self.log_callback("INFO", "Clicked 'New partner' to skip.")
                             return True
 
-                # Step B: Tap top-right action icon (!) or Android back button
-                for node in all_nodes:
-                    bounds = parse_bounds(node.attrib.get("bounds", ""))
-                    if bounds:
-                        x1, y1, x2, y2 = bounds
-                        if y1 < (screen_h * 0.15) and x2 > 800:
-                            cx = (x1 + x2) // 2
-                            cy = (y1 + y2) // 2
-                            run_adb(["shell", "input", "tap", str(cx), str(cy)])
-                            self.log_callback("INFO", "Tapped top action menu to end chat.")
-                            return True
-
-                run_adb(["shell", "input", "keyevent", "4"])
                 return True
 
         return False
