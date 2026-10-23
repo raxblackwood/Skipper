@@ -134,6 +134,16 @@ class ChatousModule(
             return
         }
 
+        if (!prefs.canSkip()) {
+            Logger.log(
+                appName = name,
+                action = "Free Trial Ended",
+                details = "10 free skips used! Subscribe to PRO in Skipper for unlimited automatic skipping.",
+                status = TriggerStatus.BLOCKED_BY_SAFEGUARD
+            )
+            return
+        }
+
         isExecutingAction = true
         lastTriggerTime = now
         val delay = prefs.chatousClickDelayMs
@@ -158,10 +168,12 @@ class ChatousModule(
                 if (target != null) {
                     val clicked = performClickSafely(target, service)
                     if (clicked) {
+                        val remaining = prefs.consumeSkip()
+                        val skipInfo = if (prefs.isProActivated) "PRO Unlimited" else "$remaining trial skip(s) left"
                         Logger.log(
                             appName = name,
                             action = "Clicked 'SKIP'",
-                            details = "Successfully skipped male match. Back to search.",
+                            details = "Successfully skipped match. Back to search ($skipInfo).",
                             status = TriggerStatus.SUCCESS
                         )
                     } else {

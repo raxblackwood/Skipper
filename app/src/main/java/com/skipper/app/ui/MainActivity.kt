@@ -61,58 +61,45 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // License & Device Fingerprint Anti-Piracy Setup
-        val deviceId = com.skipper.app.util.LicenseManager.getDeviceId(this)
-        binding.tvDeviceId.text = "Device ID: $deviceId"
-
-        fun updateLicenseUI() {
+        // Subscription & Free Trial UI Setup
+        fun updateSubscriptionUI() {
             if (prefs.isProActivated) {
-                binding.tvLicenseBadge.text = "PRO ACTIVATED"
-                binding.tvLicenseBadge.setBackgroundColor(Color.parseColor("#2E7D32"))
+                val tierLabel = when (prefs.subscriptionTier) {
+                    com.skipper.app.billing.BillingManager.SUB_DAILY -> "DAILY VIP"
+                    com.skipper.app.billing.BillingManager.SUB_WEEKLY -> "WEEKLY PRO"
+                    com.skipper.app.billing.BillingManager.SUB_MONTHLY -> "MONTHLY PRO"
+                    else -> "PRO ACTIVE"
+                }
+                binding.tvSubscriptionBadge.text = tierLabel
+                binding.tvSubscriptionBadge.setBackgroundColor(Color.parseColor("#2E7D32"))
+                binding.tvSubscriptionSubtitle.text = "Unlimited automated skipping active"
+                binding.btnOpenPaywall.text = "Manage"
             } else {
-                binding.tvLicenseBadge.text = "LOCKED"
-                binding.tvLicenseBadge.setBackgroundColor(Color.parseColor("#C62828"))
+                val remaining = prefs.remainingFreeSkips
+                if (remaining > 0) {
+                    binding.tvSubscriptionBadge.text = "TRIAL ACTIVE"
+                    binding.tvSubscriptionBadge.setBackgroundColor(Color.parseColor("#6200EE"))
+                    binding.tvSubscriptionSubtitle.text = "$remaining of 10 free skips remaining"
+                } else {
+                    binding.tvSubscriptionBadge.text = "TRIAL EXPIRED"
+                    binding.tvSubscriptionBadge.setBackgroundColor(Color.parseColor("#C62828"))
+                    binding.tvSubscriptionSubtitle.text = "10 free skips used. Upgrade to continue."
+                }
+                binding.btnOpenPaywall.text = "Upgrade"
             }
         }
-        updateLicenseUI()
+        updateSubscriptionUI()
 
-        binding.btnCopyDeviceId.setOnClickListener {
-            val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Device ID", deviceId)
-            clipboard.setPrimaryClip(clip)
-            android.widget.Toast.makeText(this, "Device ID ($deviceId) copied!", android.widget.Toast.LENGTH_SHORT).show()
+        app.billingManager.isProSubscribed.observe(this) {
+            updateSubscriptionUI()
         }
 
-        binding.btnManageLicense.setOnClickListener {
-            val input = android.widget.EditText(this).apply {
-                hint = "Enter SKIP-XXXX-XXXX-XXXX"
-                setText(prefs.licenseKey)
-                setSingleLine()
-            }
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("License Activation")
-                .setMessage("Your unique Device ID is: $deviceId\n\nEnter your purchased license key to activate unlimited skipping:")
-                .setView(input)
-                .setPositiveButton("Activate") { _, _ ->
-                    val key = input.text.toString().trim()
-                    if (com.skipper.app.util.LicenseManager.validateKey(key, deviceId)) {
-                        prefs.isProActivated = true
-                        prefs.licenseKey = key
-                        updateLicenseUI()
-                        android.widget.Toast.makeText(this, "PRO License Activated Successfully!", android.widget.Toast.LENGTH_LONG).show()
-                    } else {
-                        android.widget.Toast.makeText(this, "Invalid License Key for this device.", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .setNeutralButton("Test Key") { _, _ ->
-                    val testKey = com.skipper.app.util.LicenseManager.generateKeyForDevice(deviceId)
-                    input.setText(testKey)
-                    val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("License Key", testKey))
-                    android.widget.Toast.makeText(this, "Sample Key for this device copied: $testKey", android.widget.Toast.LENGTH_LONG).show()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+        binding.cardSubscriptionStatus.setOnClickListener {
+            SubscriptionPaywallDialog(this) { updateSubscriptionUI() }.show()
+        }
+
+        binding.btnOpenPaywall.setOnClickListener {
+            SubscriptionPaywallDialog(this) { updateSubscriptionUI() }.show()
         }
 
         // App Sections RecyclerView
@@ -153,5 +140,6 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         val app = application as SkipperApp
         appSectionAdapter.updateItems(app.automationEngine.getAllAppSections())
+        app.billingManager.queryActivePurchases()
     }
 }

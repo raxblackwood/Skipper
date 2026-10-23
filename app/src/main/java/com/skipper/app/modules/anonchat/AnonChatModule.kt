@@ -151,6 +151,16 @@ class AnonChatModule(
         service: SkipperAccessibilityService,
         reason: String
     ) {
+        if (!prefs.canSkip()) {
+            Logger.log(
+                appName = name,
+                action = "Free Trial Ended",
+                details = "10 free skips used! Subscribe to PRO in Skipper for unlimited automatic skipping.",
+                status = TriggerStatus.BLOCKED_BY_SAFEGUARD
+            )
+            return
+        }
+
         isExecutingAction = true
         lastTriggerTime = System.currentTimeMillis()
         val delay = prefs.anonChatClickDelayMs
@@ -163,7 +173,9 @@ class AnonChatModule(
                 val target = locateBottomNewPartnerButton(freshRoot, service) ?: buttonNode
                 val clicked = performClickSafely(target, service)
                 if (clicked) {
-                    Logger.log(name, "Clicked 'New partner'", "Successfully transitioned to next search.", TriggerStatus.SUCCESS)
+                    val remaining = prefs.consumeSkip()
+                    val skipInfo = if (prefs.isProActivated) "PRO Unlimited" else "$remaining trial skip(s) left"
+                    Logger.log(name, "Clicked 'New partner'", "Successfully transitioned to next search ($skipInfo).", TriggerStatus.SUCCESS)
 
                     // If AnonChat displays a confirmation dialog asking to confirm finding a new partner:
                     handler.postDelayed({

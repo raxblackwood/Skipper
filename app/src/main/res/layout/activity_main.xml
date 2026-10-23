@@ -102,16 +102,16 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- PRO License & Device Anti-Piracy Card -->
+            <!-- PRO Subscription & Free Trial Card -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardLicenseStatus"
+                android:id="@+id/cardSubscriptionStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 app:cardBackgroundColor="@color/card_bg"
                 app:cardCornerRadius="14dp"
-                app:strokeColor="#3A3842"
-                app:strokeWidth="1dp">
+                app:strokeColor="#7E57C2"
+                app:strokeWidth="1.5dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -129,19 +129,19 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="⭐ Skipper PRO License"
+                            android:text="⭐ Skipper PRO Access"
                             android:textColor="#BB86FC"
-                            android:textSize="14sp"
+                            android:textSize="15sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/tvLicenseBadge"
+                            android:id="@+id/tvSubscriptionBadge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="#2E7D32"
+                            android:background="#6200EE"
                             android:paddingHorizontal="8dp"
                             android:paddingVertical="3dp"
-                            android:text="ACTIVATED"
+                            android:text="FREE TRIAL"
                             android:textColor="#FFFFFF"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -155,31 +155,20 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/tvDeviceId"
+                            android:id="@+id/tvSubscriptionSubtitle"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Device ID: SKIP-XXXX"
+                            android:text="10 free skips remaining"
                             android:textColor="@color/on_surface_variant"
-                            android:textSize="12sp" />
+                            android:textSize="13sp" />
 
-                        <TextView
-                            android:id="@+id/btnCopyDeviceId"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenPaywall"
+                            style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:padding="4dp"
-                            android:text="Copy ID"
-                            android:textColor="@color/primary_container"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/btnManageLicense"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:padding="4dp"
-                            android:text="License Key"
+                            android:text="Upgrade"
                             android:textColor="#BB86FC"
                             android:textSize="12sp"
                             android:textStyle="bold" />

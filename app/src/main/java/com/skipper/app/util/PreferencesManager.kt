@@ -19,9 +19,12 @@ class PreferencesManager(context: Context) {
         private const val KEY_ANONCHAT_CUSTOM_PKG = "anonchat_custom_pkg"
         private const val KEY_ANONCHAT_AUTO_SKIP_MALE = "anonchat_auto_skip_male"
 
-        // License Keys
+        // License & Subscription Keys
         private const val KEY_IS_PRO = "is_pro_activated"
         private const val KEY_LICENSE_KEY = "license_key"
+        private const val KEY_REMAINING_FREE_SKIPS = "remaining_free_skips"
+        private const val KEY_SUBSCRIPTION_TIER = "subscription_tier"
+        private const val KEY_TOTAL_SKIPS_PERFORMED = "total_skips_performed"
 
         // Gender Targets ("MALE", "FEMALE", "NONE")
         private const val KEY_ANONCHAT_GENDER_TARGET = "anonchat_gender_target"
@@ -44,14 +47,51 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_DISCLOSURE_ACCEPTED, false)
         set(value) = prefs.edit().putBoolean(KEY_DISCLOSURE_ACCEPTED, value).apply()
 
-    // License state
+    // Subscription & Free Trial state
     var isProActivated: Boolean
-        get() = prefs.getBoolean(KEY_IS_PRO, true) // Enabled by default for full capability
+        get() = prefs.getBoolean(KEY_IS_PRO, false)
         set(value) = prefs.edit().putBoolean(KEY_IS_PRO, value).apply()
+
+    var remainingFreeSkips: Int
+        get() = prefs.getInt(KEY_REMAINING_FREE_SKIPS, 10)
+        set(value) = prefs.edit().putInt(KEY_REMAINING_FREE_SKIPS, value.coerceAtLeast(0)).apply()
+
+    var subscriptionTier: String
+        get() = prefs.getString(KEY_SUBSCRIPTION_TIER, "NONE") ?: "NONE"
+        set(value) = prefs.edit().putString(KEY_SUBSCRIPTION_TIER, value).apply()
+
+    var totalSkipsPerformed: Int
+        get() = prefs.getInt(KEY_TOTAL_SKIPS_PERFORMED, 0)
+        set(value) = prefs.edit().putInt(KEY_TOTAL_SKIPS_PERFORMED, value).apply()
 
     var licenseKey: String
         get() = prefs.getString(KEY_LICENSE_KEY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_LICENSE_KEY, value).apply()
+
+    fun canSkip(): Boolean {
+        return isProActivated || remainingFreeSkips > 0
+    }
+
+    /**
+     * Consumes one skip if not PRO. Returns remaining free skips (-1 if PRO).
+     */
+    fun consumeSkip(): Int {
+        totalSkipsPerformed += 1
+        if (isProActivated) {
+            return -1
+        }
+        val current = remainingFreeSkips
+        if (current > 0) {
+            val updated = current - 1
+            remainingFreeSkips = updated
+            return updated
+        }
+        return 0
+    }
+
+    fun resetTrial() {
+        remainingFreeSkips = 10
+    }
 
     // AnonChat settings
     var isAnonChatEnabled: Boolean
