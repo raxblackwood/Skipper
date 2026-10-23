@@ -27,7 +27,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_ANONCHAT_GENDER_TARGET = "anonchat_gender_target"
         private const val KEY_ANONCHAT_CUSTOM_KEYWORDS = "anonchat_custom_keywords"
         private const val KEY_CHATOUS_GENDER_TARGET = "chatous_gender_target"
-        private const val KEY_CHATOUS_CUSTOM_KEYWORDS = "chatous_custom_keywords"
 
         // Chatous Keys
         private const val KEY_CHATOUS_ENABLED = "chatous_enabled"
@@ -98,10 +97,6 @@ class PreferencesManager(context: Context) {
     var chatousGenderTarget: String
         get() = prefs.getString(KEY_CHATOUS_GENDER_TARGET, "MALE") ?: "MALE"
         set(value) = prefs.edit().putString(KEY_CHATOUS_GENDER_TARGET, value).apply()
-
-    var chatousCustomKeywords: Set<String>
-        get() = prefs.getStringSet(KEY_CHATOUS_CUSTOM_KEYWORDS, setOf("male", "boy", "guy", "dude")) ?: emptySet()
-        set(value) = prefs.edit().putStringSet(KEY_CHATOUS_CUSTOM_KEYWORDS, value).apply()
 
     var chatousClickDelayMs: Long
         get() = prefs.getLong(KEY_CHATOUS_CLICK_DELAY, 250L)

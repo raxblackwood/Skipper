@@ -75,7 +75,9 @@ class AnonChatModule(
         // SCENARIO 1: Partner already disconnected ("Chat was ended by your partner")
         // =========================================================================
         val isChatEnded = NodeMatcher.hasText(rootNode, "Chat was ended by your partner") ||
-                NodeMatcher.hasText(rootNode, "Chat was ended")
+                NodeMatcher.hasText(rootNode, "Chat was ended by you") ||
+                NodeMatcher.hasText(rootNode, "Chat was ended") ||
+                NodeMatcher.hasText(rootNode, "has left the chat")
 
         if (isChatEnded) {
             if (prefs.isAnonChatOnlyInstantSkip && !evaluateIsInstantSkipScreen4(rootNode)) {
@@ -92,11 +94,11 @@ class AnonChatModule(
         // =========================================================================
         // SCENARIO 2: AI Bio & Keyword Detection (When partner matches & does not skip)
         // =========================================================================
-        if (prefs.isAnonChatAutoSkipMale) {
+        if (prefs.isAnonChatAutoSkipMale && !isChatEnded) {
             val hasProfileCard = NodeMatcher.hasText(rootNode, "About partner") ||
                     NodeMatcher.hasText(rootNode, "Chat starts")
 
-            if (hasProfileCard && !hasConversationHistory(rootNode)) {
+            if (hasProfileCard) {
                 val bioText = extractBioAndProfileText(rootNode)
                 val targetGender = prefs.anonChatGenderTarget
                 val customKeywords = prefs.anonChatCustomKeywords
@@ -138,6 +140,7 @@ class AnonChatModule(
 
     /**
      * Executes skipping an active partner who matches skip criteria but hasn't disconnected.
+     * In AnonChat, to end an active chat, we MUST click "End chat" (NOT "New partner").
      */
     private fun executeSkipActivePartner(
         rootNode: AccessibilityNodeInfo,
@@ -151,27 +154,42 @@ class AnonChatModule(
             try {
                 val freshRoot = service.rootInActiveWindow ?: rootNode
 
-                // Step 1: If "New partner" button already appeared, click it
-                val newPartnerBtn = locateBottomNewPartnerButton(freshRoot, service)
-                if (newPartnerBtn != null) {
-                    performClickSafely(newPartnerBtn, service)
-                    Logger.log(name, "Clicked 'New partner'", "Skipped male profile.", TriggerStatus.SUCCESS)
-                    return@postDelayed
-                }
-
-                // Step 2: Check for "End chat" button in dialog or screen
+                // Step 1: In an active chat, find and click the "End chat" button
                 val endChatNodes = NodeMatcher.findNodes(freshRoot) { node ->
                     val text = node.text?.toString() ?: node.contentDescription?.toString()
-                    text != null && (text.contains("End chat", ignoreCase = true) || text.contains("Leave chat", ignoreCase = true))
+                    text != null && (text.trim().equals("End chat", ignoreCase = true) ||
+                                     text.contains("End chat", ignoreCase = true) ||
+                                     text.contains("Leave chat", ignoreCase = true))
                 }
-                val endChatTarget = endChatNodes.firstOrNull()?.let { NodeMatcher.findClickableTarget(it) ?: it }
+                val endChatTarget = endChatNodes.lastOrNull()?.let { NodeMatcher.findClickableTarget(it) ?: it }
+
                 if (endChatTarget != null) {
                     performClickSafely(endChatTarget, service)
-                    Logger.log(name, "Clicked 'End chat'", "Ending chat with male partner.", TriggerStatus.INFO)
+                    Logger.log(name, "Clicked 'End chat'", "Ending chat with non-matching partner.", TriggerStatus.INFO)
+
+                    // Step 1b: If AnonChat displays a confirmation dialog, click "End chat" again
+                    handler.postDelayed({
+                        try {
+                            val dialogRoot = service.rootInActiveWindow
+                            if (dialogRoot != null) {
+                                val confirmNodes = NodeMatcher.findNodes(dialogRoot) { n ->
+                                    val t = n.text?.toString() ?: n.contentDescription?.toString()
+                                    t != null && t.trim().equals("End chat", ignoreCase = true)
+                                }
+                                confirmNodes.firstOrNull()?.let {
+                                    val target = NodeMatcher.findClickableTarget(it) ?: it
+                                    performClickSafely(target, service)
+                                    Logger.log(name, "Confirmed 'End chat'", "Confirmed exit dialog.", TriggerStatus.INFO)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Dialog did not appear
+                        }
+                    }, 350L)
                     return@postDelayed
                 }
 
-                // Step 3: Trigger exit menu via top-right action icon (!) or Android Back action
+                // Step 2: Fallback via top-right action icon (!) or Android Back action
                 val displayWidth = service.resources.displayMetrics.widthPixels
                 val displayHeight = service.resources.displayMetrics.heightPixels
 
@@ -184,13 +202,13 @@ class AnonChatModule(
                 val topAction = topActionNodes.firstOrNull()?.let { NodeMatcher.findClickableTarget(it) ?: it }
                 if (topAction != null) {
                     performClickSafely(topAction, service)
-                    Logger.log(name, "Action Icon Triggered", "Opening end chat menu for male partner.", TriggerStatus.INFO)
+                    Logger.log(name, "Action Icon Triggered", "Opening end chat menu for target partner.", TriggerStatus.INFO)
                 } else {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                    Logger.log(name, "Back Action Triggered", "Prompting end chat for male partner.", TriggerStatus.INFO)
+                    Logger.log(name, "Back Action Triggered", "Prompting end chat for target partner.", TriggerStatus.INFO)
                 }
             } catch (e: Exception) {
-                Logger.log(name, "Error", "Exception skipping male: ${e.message}", TriggerStatus.ERROR)
+                Logger.log(name, "Error", "Exception skipping partner: ${e.message}", TriggerStatus.ERROR)
             } finally {
                 isExecutingAction = false
             }
@@ -234,26 +252,27 @@ class AnonChatModule(
                 capturing = true
                 continue
             }
-            if (text.contains("Write a message", ignoreCase = true) || text.contains("New partner", ignoreCase = true)) {
-                break
-            }
             if (capturing) {
+                // Stop capturing when reaching bottom input or actions
+                if (text.contains("Write a message", ignoreCase = true) ||
+                    text.contains("Send friend request", ignoreCase = true) ||
+                    text.contains("End chat", ignoreCase = true)) {
+                    break
+                }
                 sb.append(text).append(" ")
             }
         }
 
-        if (sb.isEmpty()) {
-            return allTexts.filter { !it.contains("New partner") && !it.contains("anon.chat") }.joinToString(" ")
+        if (sb.isNotEmpty()) {
+            return sb.toString().trim()
         }
-        return sb.toString().trim()
-    }
-
-    private fun hasConversationHistory(rootNode: AccessibilityNodeInfo): Boolean {
-        val allTexts = NodeMatcher.collectAllText(rootNode)
-        return allTexts.any { text ->
-            text.contains("Seen", ignoreCase = true) ||
-            Regex("""\b\d{1,2}:\d{2}\s*(AM|PM)?\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)
-        }
+        return allTexts.filter {
+            !it.contains("New partner", ignoreCase = true) &&
+            !it.contains("anon.chat", ignoreCase = true) &&
+            !it.contains("Write a message", ignoreCase = true) &&
+            !it.contains("Send friend request", ignoreCase = true) &&
+            !it.contains("End chat", ignoreCase = true)
+        }.joinToString(" ").trim()
     }
 
     private fun evaluateIsInstantSkipScreen4(rootNode: AccessibilityNodeInfo): Boolean {
@@ -262,11 +281,7 @@ class AnonChatModule(
         val hasChatStarts = allTexts.any { it.contains("Chat starts", ignoreCase = true) }
         val hasInterests = allTexts.any { it.contains("Interests", ignoreCase = true) }
 
-        if (!hasProfileHeader && !hasChatStarts && !hasInterests) {
-            return false
-        }
-
-        return !hasConversationHistory(rootNode)
+        return hasProfileHeader || hasChatStarts || hasInterests
     }
 
     private fun locateBottomNewPartnerButton(
@@ -284,11 +299,9 @@ class AnonChatModule(
             val bounds = Rect()
             node.getBoundsInScreen(bounds)
 
+            // Must be in bottom half of screen to avoid top toolbar title "New partner"
             val isAtBottom = bounds.top > (displayHeight * 0.55)
-            val hasNeighborButtons = NodeMatcher.hasText(rootNode, "End chat") ||
-                    NodeMatcher.hasText(rootNode, "Report")
-
-            if (isAtBottom && hasNeighborButtons) {
+            if (isAtBottom) {
                 return NodeMatcher.findClickableTarget(node) ?: node
             }
         }
@@ -300,14 +313,18 @@ class AnonChatModule(
         node: AccessibilityNodeInfo,
         service: SkipperAccessibilityService
     ): Boolean {
-        val clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        if (clicked) return true
-
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
-        if (!bounds.isEmpty) {
-            return service.clickCoordinates(bounds.centerX().toFloat(), bounds.centerY().toFloat())
+        val target = NodeMatcher.findClickableTarget(node) ?: node
+        val clicked = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
+        // Always also dispatch gesture coordinates if bounds are valid to guarantee the physical touch is registered
+        if (!bounds.isEmpty && bounds.width() > 0 && bounds.height() > 0) {
+            val cx = bounds.centerX().toFloat()
+            val cy = bounds.centerY().toFloat()
+            service.clickCoordinates(cx, cy)
+            return true
         }
-        return false
+        return clicked
     }
 }

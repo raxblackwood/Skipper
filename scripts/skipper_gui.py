@@ -186,9 +186,6 @@ class SkipperEngine:
         if not (has_lets_chat and has_skip):
             return False
 
-        # Custom keywords check
-        matched_custom = [kw for kw in self.custom_keywords if any(kw in t.lower() for t in all_texts)]
-
         male_regex = re.compile(r"\bMale\b", re.IGNORECASE)
         female_regex = re.compile(r"\bFemale\b", re.IGNORECASE)
         has_male = any(male_regex.search(t) for t in all_texts) or any("♂" in t for t in all_texts)
@@ -197,10 +194,7 @@ class SkipperEngine:
         should_skip = False
         reason = ""
 
-        if matched_custom:
-            should_skip = True
-            reason = f"Matched custom keywords: {matched_custom}"
-        elif self.target_gender == "FEMALE":
+        if self.target_gender == "FEMALE":
             if has_female:
                 should_skip = True
                 reason = "Female profile detected"
@@ -279,45 +273,36 @@ class SkipperEngine:
         has_profile_card = any("About partner" in t or "Chat starts" in t for t in all_texts)
         has_timestamps = any("Seen" in t or re.search(r"\b\d{1,2}:\d{2}\s*(AM|PM)?\b", t, re.I) for t in all_texts)
 
-        if has_profile_card and not has_timestamps:
+        if has_profile_card:
             bio_text = " ".join([t for t in all_texts if "anon.chat" not in t and "New partner" not in t])
-            bio_lower = bio_text.lower()
 
-            matched_custom = [kw for kw in self.custom_keywords if kw in bio_lower]
+            matched_custom = [kw for kw in self.custom_keywords if re.search(r"\b" + re.escape(kw) + r"\b", bio_text, re.I)]
             is_female = any(re.search(pat, bio_text, re.I) for pat in FEMALE_PATTERNS)
             matched_male = [pat for pat in MALE_PATTERNS if re.search(pat, bio_text, re.I)]
 
             should_skip = False
             reason = ""
 
-            if matched_custom:
-                should_skip = True
-                reason = f"Custom keywords: {matched_custom}"
-            elif self.target_gender == "FEMALE":
-                if is_female and not matched_male:
+            if self.target_gender == "MALE":
+                # Female protection first
+                if is_female and not any(re.search(r"\b(looking for|want|need)\b.*(female|girl)", bio_text, re.I)):
+                    should_skip = False
+                elif matched_custom:
                     should_skip = True
-                    reason = "Female bio indicators"
-            else:
-                if matched_male and not is_female:
+                    reason = f"Custom keywords: {matched_custom}"
+                elif matched_male:
                     should_skip = True
                     reason = f"Male bio: {matched_male[0]}"
+            else:
+                if is_female or matched_custom:
+                    should_skip = True
+                    reason = "Female bio indicators"
 
             if should_skip:
                 self.log_callback("INFO", f"AI detected {reason}. Auto-skipping...")
                 time.sleep(self.click_delay)
 
-                # Step A: Check if 'New partner' button is visible
-                for node in all_nodes:
-                    if "New partner" in node.attrib.get("text", ""):
-                        bounds = parse_bounds(node.attrib.get("bounds", ""))
-                        if bounds and bounds[1] > (screen_h * 0.55):
-                            cx = (bounds[0] + bounds[2]) // 2
-                            cy = (bounds[1] + bounds[3]) // 2
-                            run_adb(["shell", "input", "tap", str(cx), str(cy)])
-                            self.log_callback("SUCCESS", "Clicked 'New partner'.")
-                            return True
-
-                # Step B: Check if 'End chat' button is visible
+                # Step A: In active chat, MUST click 'End chat' first
                 for node in all_nodes:
                     if "End chat" in node.attrib.get("text", ""):
                         bounds = parse_bounds(node.attrib.get("bounds", ""))
@@ -328,7 +313,7 @@ class SkipperEngine:
                             self.log_callback("INFO", "Clicked 'End chat'.")
                             return True
 
-                # Step C: Tap top-right action icon (!) or Android back button
+                # Step B: Tap top-right action icon (!) or Android back button
                 for node in all_nodes:
                     bounds = parse_bounds(node.attrib.get("bounds", ""))
                     if bounds:

@@ -36,6 +36,12 @@ object GenderClassifier {
         // "M here", "Male here", "Guy here", "Boy here"
         Regex("""\b[mM](ale)?\s+here\b""", RegexOption.IGNORE_CASE),
         Regex("""\b(guy|boy|dude)\s+here\b""", RegexOption.IGNORE_CASE),
+        // "M from Delhi", "M from India", "M in Delhi"
+        Regex("""\b[mM]\s+(from|in)\b""", RegexOption.IGNORE_CASE),
+        // "I am M", "Im M", "I'm M"
+        Regex("""\b(i\s*am|im|i'm)\s+[mM]\b""", RegexOption.IGNORE_CASE),
+        // Standalone M
+        Regex("""\b[mM]\b"""),
         // Explicit male identity words (using word boundary so "female" NEVER matches)
         Regex("""\b(male|boy|guy|dude|gentleman|man)\b""", RegexOption.IGNORE_CASE),
         // Pronouns
@@ -86,15 +92,7 @@ object GenderClassifier {
             return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
         }
 
-        // 1. Check custom keywords first
-        val matchedCustom = mutableListOf<String>()
-        for (kw in customKeywords) {
-            val trimmed = kw.trim()
-            if (trimmed.isNotEmpty() && clean.contains(trimmed, ignoreCase = true)) {
-                matchedCustom.add(trimmed)
-            }
-        }
-
+        // 1. Evaluate male and female patterns first
         val matchedMale = mutableListOf<String>()
         for (pattern in MALE_PATTERNS) {
             pattern.find(clean)?.let { match ->
@@ -109,22 +107,45 @@ object GenderClassifier {
             }
         }
 
-        // If custom keywords matched, prioritize skip!
-        if (matchedCustom.isNotEmpty()) {
-            return ClassificationReport(
-                result = if (targetGender == "FEMALE") GenderResult.FEMALE else GenderResult.MALE,
-                matchedTokens = matchedCustom,
-                confidence = 1.0f
-            )
+        // 2. Check custom keywords with strict whole-word boundaries (\b)
+        // This guarantees that keywords like "male" or "m" will NEVER match inside "female"!
+        val matchedCustom = mutableListOf<String>()
+        for (kw in customKeywords) {
+            val trimmed = kw.trim()
+            if (trimmed.isEmpty()) continue
+            try {
+                val kwRegex = Regex("""\b${Regex.escape(trimmed)}\b""", RegexOption.IGNORE_CASE)
+                kwRegex.find(clean)?.let { match ->
+                    matchedCustom.add(match.value)
+                }
+            } catch (e: Exception) {
+                // If regex compilation fails, fallback to exact word match
+                val words = clean.split(Regex("""\s+"""))
+                if (words.any { it.equals(trimmed, ignoreCase = true) }) {
+                    matchedCustom.add(trimmed)
+                }
+            }
         }
 
-        // Target Gender = FEMALE: user wants to skip females!
+        // Determine if this profile is genuinely female
+        val hasFemaleIndicator = matchedFemale.isNotEmpty()
+        val wasLookingForFemale = matchedMale.any {
+            it.contains("female", ignoreCase = true) ||
+            it.contains("girl", ignoreCase = true) ||
+            it.contains("woman", ignoreCase = true) ||
+            it.contains("chick", ignoreCase = true) ||
+            it.contains("gf", ignoreCase = true)
+        }
+        val isDefiniteFemale = hasFemaleIndicator && !wasLookingForFemale
+
+        // Target Gender = FEMALE: user explicitly wants to skip females!
         if (targetGender.equals("FEMALE", ignoreCase = true)) {
-            if (matchedFemale.isNotEmpty()) {
+            if (isDefiniteFemale || matchedCustom.isNotEmpty()) {
+                val tokens = (matchedFemale + matchedCustom).distinct()
                 return ClassificationReport(
                     result = GenderResult.FEMALE,
-                    matchedTokens = matchedFemale,
-                    confidence = 0.95f
+                    matchedTokens = if (tokens.isNotEmpty()) tokens else listOf("Target Female"),
+                    confidence = 1.0f
                 )
             }
             if (matchedMale.isNotEmpty()) {
@@ -137,29 +158,29 @@ object GenderClassifier {
             return ClassificationReport(GenderResult.UNDETERMINED, emptyList(), 0f)
         }
 
-        // Default Target Gender = MALE: user wants to skip males!
-        if (matchedFemale.isNotEmpty()) {
-            val wasLookingForFemale = matchedMale.any { it.contains("female", ignoreCase = true) || it.contains("girl", ignoreCase = true) }
-            val onlyFemaleFoundWasTargetOfLooking = matchedFemale.all { it.equals("female", ignoreCase = true) || it.equals("girl", ignoreCase = true) } && wasLookingForFemale
-
-            if (!onlyFemaleFoundWasTargetOfLooking) {
-                return ClassificationReport(
-                    result = GenderResult.FEMALE,
-                    matchedTokens = matchedFemale,
-                    confidence = 0.95f
-                )
-            }
+        // Target Gender = MALE (Default): user wants to skip males!
+        // SAFEGUARD 1: ABSOLUTE FEMALE PROTECTION
+        // If female indicators are present, protect it at all costs! Never allow custom keywords to override a genuine female!
+        if (isDefiniteFemale) {
+            return ClassificationReport(
+                result = GenderResult.FEMALE,
+                matchedTokens = matchedFemale,
+                confidence = 1.0f
+            )
         }
 
-        if (matchedMale.isNotEmpty()) {
-            val confidence = minOf(1.0f, 0.7f + (matchedMale.size * 0.15f))
+        // SAFEGUARD 2: Skip on matched custom keywords or male patterns
+        val allMatchedMale = (matchedCustom + matchedMale).distinct()
+        if (allMatchedMale.isNotEmpty()) {
+            val confidence = minOf(1.0f, 0.75f + (allMatchedMale.size * 0.15f))
             return ClassificationReport(
                 result = GenderResult.MALE,
-                matchedTokens = matchedMale,
+                matchedTokens = allMatchedMale,
                 confidence = confidence
             )
         }
 
+        // SAFEGUARD 3: If undetermined, do NOT guess.
         return ClassificationReport(
             result = GenderResult.UNDETERMINED,
             matchedTokens = emptyList(),

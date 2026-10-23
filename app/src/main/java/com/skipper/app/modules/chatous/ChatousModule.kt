@@ -89,7 +89,6 @@ class ChatousModule(
         val allTexts = NodeMatcher.collectAllText(rootNode)
 
         val targetGender = prefs.chatousGenderTarget
-        val customKeywords = prefs.chatousCustomKeywords
 
         val maleRegex = Regex("""\bMale\b""", RegexOption.IGNORE_CASE)
         val femaleRegex = Regex("""\bFemale\b""", RegexOption.IGNORE_CASE)
@@ -102,15 +101,7 @@ class ChatousModule(
         val hasFemaleSymbol = allTexts.any { it.contains("♀") }
         val isFemale = hasFemaleWord || hasFemaleSymbol
 
-        // Check custom keywords
-        val matchedCustom = customKeywords.filter { kw ->
-            val trimmed = kw.trim()
-            trimmed.isNotEmpty() && allTexts.any { it.contains(trimmed, ignoreCase = true) }
-        }
-
-        val shouldSkip = if (matchedCustom.isNotEmpty()) {
-            true
-        } else if (targetGender == "FEMALE") {
+        val shouldSkip = if (targetGender == "FEMALE") {
             isFemale
         } else {
             isMale
@@ -147,9 +138,7 @@ class ChatousModule(
         lastTriggerTime = now
         val delay = prefs.chatousClickDelayMs
 
-        val triggerReason = if (matchedCustom.isNotEmpty()) {
-            "Matched custom keywords: $matchedCustom"
-        } else if (targetGender == "FEMALE") {
+        val triggerReason = if (targetGender == "FEMALE") {
             "Female Profile Detected"
         } else {
             "Male Profile Detected"
@@ -226,14 +215,17 @@ class ChatousModule(
         node: AccessibilityNodeInfo,
         service: SkipperAccessibilityService
     ): Boolean {
-        val clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        if (clicked) return true
-
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
-        if (!bounds.isEmpty) {
-            return service.clickCoordinates(bounds.centerX().toFloat(), bounds.centerY().toFloat())
+        val target = NodeMatcher.findClickableTarget(node) ?: node
+        val clicked = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
+        if (!bounds.isEmpty && bounds.width() > 0 && bounds.height() > 0) {
+            val cx = bounds.centerX().toFloat()
+            val cy = bounds.centerY().toFloat()
+            service.clickCoordinates(cx, cy)
+            return true
         }
-        return false
+        return clicked
     }
 }
