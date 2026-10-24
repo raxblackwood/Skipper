@@ -1,9 +1,11 @@
 package com.skipper.app.ui
 
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.skipper.app.R
@@ -49,8 +51,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        SkipperAccessibilityService.isServiceConnected.observe(this) { isConnected ->
-            if (isConnected) {
+        fun updateServiceStatusUI(isConnected: Boolean) {
+            val active = isConnected || isAccessibilityServiceEnabled()
+            if (active) {
                 binding.indicatorStatus.setBackgroundColor(Color.parseColor("#4CAF50"))
                 binding.tvServiceStatus.text = getString(R.string.service_active)
                 binding.btnEnableService.text = "Settings"
@@ -59,6 +62,10 @@ class MainActivity : AppCompatActivity() {
                 binding.tvServiceStatus.text = getString(R.string.service_inactive)
                 binding.btnEnableService.text = "Enable"
             }
+        }
+
+        SkipperAccessibilityService.isServiceConnected.observe(this) { isConnected ->
+            updateServiceStatusUI(isConnected)
         }
 
         // Subscription & Free Trial UI Setup
@@ -141,5 +148,34 @@ class MainActivity : AppCompatActivity() {
         val app = application as SkipperApp
         appSectionAdapter.updateItems(app.automationEngine.getAllAppSections())
         app.billingManager.queryActivePurchases()
+
+        val active = SkipperAccessibilityService.instance != null || isAccessibilityServiceEnabled()
+        if (active) {
+            binding.indicatorStatus.setBackgroundColor(Color.parseColor("#4CAF50"))
+            binding.tvServiceStatus.text = getString(R.string.service_active)
+            binding.btnEnableService.text = "Settings"
+        } else {
+            binding.indicatorStatus.setBackgroundColor(Color.parseColor("#F44336"))
+            binding.tvServiceStatus.text = getString(R.string.service_inactive)
+            binding.btnEnableService.text = "Enable"
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val expectedComponentName = ComponentName(this, SkipperAccessibilityService::class.java)
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val colonSplitter = TextUtils.SimpleStringSplitter(':')
+        colonSplitter.setString(enabledServices)
+        while (colonSplitter.hasNext()) {
+            val componentNameString = colonSplitter.next()
+            val enabledComponent = ComponentName.unflattenFromString(componentNameString)
+            if (enabledComponent != null && enabledComponent == expectedComponentName) {
+                return true
+            }
+        }
+        return false
     }
 }
