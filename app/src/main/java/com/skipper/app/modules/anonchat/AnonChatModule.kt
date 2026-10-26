@@ -80,6 +80,17 @@ class AnonChatModule(
                 NodeMatcher.hasText(rootNode, "has left the chat")
 
         if (isChatEnded) {
+            // Guard: If any text exchange took place, NEVER auto-skip!
+            if (hasChatExchanges(rootNode)) {
+                Logger.log(
+                    appName = name,
+                    action = "Conversation Protected",
+                    details = "Messages were exchanged before chat ended. Auto-skip prevented so you can view chat history.",
+                    status = TriggerStatus.BLOCKED_BY_SAFEGUARD
+                )
+                return
+            }
+
             if (prefs.isAnonChatOnlyInstantSkip && !evaluateIsInstantSkipScreen4(rootNode)) {
                 return
             }
@@ -95,6 +106,11 @@ class AnonChatModule(
         // SCENARIO 2: AI Bio & Keyword Detection (When partner matches & does not skip)
         // =========================================================================
         if (prefs.isAnonChatAutoSkipMale && !isChatEnded) {
+            // Guard: If conversation is already underway, do not trigger bio skip!
+            if (hasChatExchanges(rootNode)) {
+                return
+            }
+
             val hasProfileCard = NodeMatcher.hasText(rootNode, "About partner") ||
                     NodeMatcher.hasText(rootNode, "Chat starts")
 
@@ -171,38 +187,21 @@ class AnonChatModule(
             try {
                 val freshRoot = service.rootInActiveWindow ?: buttonNode
                 val target = locateBottomNewPartnerButton(freshRoot, service) ?: buttonNode
+
+                // Defensive check: Ensure the target node is strictly in the lower region of the screen
+                val targetBounds = Rect()
+                target.getBoundsInScreen(targetBounds)
+                val displayHeight = service.resources.displayMetrics.heightPixels
+                if (targetBounds.top < (displayHeight * 0.50)) {
+                    Logger.log(name, "Safety Block", "Target was in top half (${targetBounds.top}px). Aborting click to protect bio header.", TriggerStatus.BLOCKED_BY_SAFEGUARD)
+                    return@postDelayed
+                }
+
                 val clicked = performClickSafely(target, service)
                 if (clicked) {
                     val remaining = prefs.consumeSkip()
                     val skipInfo = if (prefs.isProActivated) "PRO Unlimited" else "$remaining trial skip(s) left"
                     Logger.log(name, "Clicked 'New partner'", "Successfully transitioned to next search ($skipInfo).", TriggerStatus.SUCCESS)
-
-                    // If AnonChat displays a confirmation dialog asking to confirm finding a new partner:
-                    handler.postDelayed({
-                        try {
-                            val dialogRoot = service.rootInActiveWindow
-                            if (dialogRoot != null) {
-                                val confirmCandidates = NodeMatcher.findNodes(dialogRoot) { n ->
-                                    val t = n.text?.toString() ?: n.contentDescription?.toString()
-                                    t != null && (t.trim().equals("New partner", ignoreCase = true) ||
-                                                  t.trim().equals("Yes", ignoreCase = true) ||
-                                                  t.trim().equals("OK", ignoreCase = true) ||
-                                                  t.trim().equals("Skip", ignoreCase = true) ||
-                                                  t.trim().equals("Confirm", ignoreCase = true))
-                                }
-                                confirmCandidates.firstOrNull()?.let {
-                                    val confirmTarget = NodeMatcher.findClickableTarget(it) ?: it
-                                    performClickSafely(confirmTarget, service)
-                                    Logger.log(name, "Confirmed skip", "Confirmed new partner dialog.", TriggerStatus.INFO)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            // Dialog did not appear
-                        } finally {
-                            isExecutingAction = false
-                        }
-                    }, 350L)
-                    return@postDelayed
                 }
             } catch (e: Exception) {
                 Logger.log(name, "Error", "Exception clicking 'New partner': ${e.message}", TriggerStatus.ERROR)
@@ -210,6 +209,47 @@ class AnonChatModule(
                 isExecutingAction = false
             }
         }, delay)
+    }
+
+    /**
+     * Checks if any chat messages or conversational exchanges have taken place.
+     * In AnonChat, any message sent or received creates timestamp nodes (e.g. "3:44 PM", "Seen · 3:45 PM"),
+     * outgoing bubble indicators ("Me"), or message bubble content.
+     */
+    private fun hasChatExchanges(rootNode: AccessibilityNodeInfo): Boolean {
+        val allTexts = NodeMatcher.collectAllText(rootNode)
+
+        // 1. Any message timestamps: e.g. "3:45 PM", "12:04 AM", "15:30"
+        val timeRegex = Regex("""\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b""")
+        if (allTexts.any { timeRegex.containsMatchIn(it) }) {
+            return true
+        }
+
+        // 2. Message status indicators: "Me", "Seen", or "Seen · 3:45 PM"
+        if (allTexts.any { it.equals("Me", ignoreCase = true) || it.startsWith("Seen", ignoreCase = true) }) {
+            return true
+        }
+
+        // 3. Any actual chat bubble texts outside of the fixed system profile elements
+        val systemTokens = setOf(
+            "new partner", "chat starts", "about partner", "interests",
+            "report", "end chat", "send friend request", "write a message...",
+            "chat was ended by your partner", "chat was ended by you", "chat was ended", "has left the chat"
+        )
+        val interestsList = setOf(
+            "games", "anime", "movies", "meme", "loneliness", "books",
+            "flirt", "travel", "music", "pets", "food", "art", "sports"
+        )
+
+        val nonSystemTexts = allTexts.filter { text ->
+            val lower = text.trim().lowercase()
+            !systemTokens.contains(lower) &&
+            !interestsList.contains(lower) &&
+            !lower.startsWith("about partner") &&
+            !lower.startsWith("interests")
+        }
+
+        return nonSystemTexts.size > 1
     }
 
     private fun extractBioAndProfileText(rootNode: AccessibilityNodeInfo): String {
@@ -246,6 +286,10 @@ class AnonChatModule(
     }
 
     private fun evaluateIsInstantSkipScreen4(rootNode: AccessibilityNodeInfo): Boolean {
+        if (hasChatExchanges(rootNode)) {
+            return false
+        }
+
         val allTexts = NodeMatcher.collectAllText(rootNode)
         val hasProfileHeader = allTexts.any { it.contains("About partner", ignoreCase = true) }
         val hasChatStarts = allTexts.any { it.contains("Chat starts", ignoreCase = true) }
@@ -265,14 +309,26 @@ class AnonChatModule(
             text != null && text.contains("New partner", ignoreCase = true)
         }
 
-        for (node in candidateNodes) {
+        // Search candidates from bottom to top so the actual bottom button is prioritized
+        for (node in candidateNodes.reversed()) {
             val bounds = Rect()
             node.getBoundsInScreen(bounds)
 
-            // Must be in bottom half of screen to avoid top toolbar title "New partner"
-            val isAtBottom = bounds.top > (displayHeight * 0.55)
-            if (isAtBottom) {
-                return NodeMatcher.findClickableTarget(node) ?: node
+            // Must be strictly in the lower region of the screen (> 65% of display height)
+            // This strictly excludes the top header title/avatar at ~6% of display height
+            if (bounds.top > (displayHeight * 0.65)) {
+                if (node.isClickable) {
+                    return node
+                }
+                val parentTarget = NodeMatcher.findClickableTarget(node)
+                if (parentTarget != null) {
+                    val parentBounds = Rect()
+                    parentTarget.getBoundsInScreen(parentBounds)
+                    if (parentBounds.top > (displayHeight * 0.65)) {
+                        return parentTarget
+                    }
+                }
+                return node
             }
         }
 
@@ -285,7 +341,7 @@ class AnonChatModule(
     ): Boolean {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
-        val target = NodeMatcher.findClickableTarget(node) ?: node
+        val target = if (node.isClickable) node else (NodeMatcher.findClickableTarget(node) ?: node)
         val clicked = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
         // Always also dispatch gesture coordinates if bounds are valid to guarantee the physical touch is registered
