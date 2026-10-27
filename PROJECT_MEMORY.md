@@ -2,30 +2,30 @@
 
 - **Project ID**: `5435ae1b-0452-4577-b1de-9804ddb347a2`
 - **Workspace**: `E:\CODES\Miscs\Skipper`
-- **Status**: Active
+- **Status**: Active (Release Preparation Ready)
 
 ## 1. Executive Summary
 
 Skipper is an Android utility leveraging `AccessibilityService` to automate anonymous chat workflows.
 It auto-skips instantly disconnected partners and filters incoming chat profiles based on customizable keywords and gender indicators.
-It also includes safety guards preventing auto-skips once active conversational exchanges have occurred.
+It includes safety guards preventing auto-skips once active conversational exchanges have occurred and integrates Google Play In-App Billing for recurring tiers.
 
 ## 2. Technical Scope & Stack
 
 - **Stack**: Android (Kotlin, AndroidX, Material Design 3, Coroutines, SharedPreferences).
 - **Automation Engine**: `AccessibilityService` node hierarchy traversal and gesture dispatch.
-- **Billing & Licensing Engine**: Google Play Billing Library with local test mode and cryptographic hardware-bound promo key validation.
+- **Billing & Licensing Engine**: Google Play Billing Library v7 with local test mode and cryptographic hardware-bound promo key validation.
 - **Companion Engine**: Python desktop ADB script (`scripts/skipper_adb.py`, `scripts/skipper_gui.py`).
 - **Target Integrations**: AnonChat (`com.anonchat.android`), Chatous (`com.chatous`).
 
 ## 3. Milestones & Current Focus
 
-- Fixed false-positive conversational exchange detection: eliminated flawed heuristic that misidentified multi-line bios and interest tags as chat bubbles.
-- Chat exchange verification now strictly checks real message timestamps (`\d{1,2}:\d{2}\s*(?:AM|PM)`), read receipts (`"Seen"`), quote badges (`"Me"`), or total absence of profile cards on ended screens.
-- Fixed recurring trial expiration bug: prevented `BillingManager` from overwriting test activations and promo unlocks to `false` when Google Play returns zero active purchases.
-- Added permanent Test PRO mode allowing uninterrupted unlimited skipping for development and testing without burning trial skips.
-- Adjusted bottom action button search boundary to `>60%` display height for universal device compatibility.
-- Synchronized desktop companion GUI safeguards.
+- Prepared full Google Play Store release kit and metadata documentation (`PLAY_STORE_METADATA.md`).
+- Verified signed release Android App Bundle `Skipper.aab` (RSA 2048-bit, valid until 2054, targetSdk 35).
+- Generated complete store listing visual assets: high-resolution icon (512x512), feature graphic (1024x500), and 4 showcase screenshots (1080x1920).
+- Published comprehensive `PRIVACY_POLICY.md` strictly adhering to Google Play User Data and Accessibility Service disclosure requirements.
+- Completed Data Safety questionnaire and Accessibility Service declaration answers for Google review.
+- Fixed false-positive conversational exchange detection and resolved test subscription persistence.
 
 ## 4. Key Invariants & Safeguards
 
