@@ -75,6 +75,8 @@ class MainActivity : AppCompatActivity() {
                     com.skipper.app.billing.BillingManager.SUB_DAILY -> "DAILY VIP"
                     com.skipper.app.billing.BillingManager.SUB_WEEKLY -> "WEEKLY PRO"
                     com.skipper.app.billing.BillingManager.SUB_MONTHLY -> "MONTHLY PRO"
+                    "PRO_TEST" -> "TEST PRO"
+                    "PRO_PROMO" -> "PROMO UNLOCKED"
                     else -> "PRO ACTIVE"
                 }
                 binding.tvSubscriptionBadge.text = tierLabel

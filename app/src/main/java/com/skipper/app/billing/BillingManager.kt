@@ -114,14 +114,21 @@ class BillingManager(
                     }
                 }
 
-                prefs.isProActivated = hasActiveSub
                 if (hasActiveSub) {
+                    prefs.isProActivated = true
                     prefs.subscriptionTier = activeTier
-                } else if (!hasActiveSub && prefs.subscriptionTier != "PRO_MANUAL") {
-                    // Do not overwrite manual test key activation if user entered one
-                    prefs.subscriptionTier = "NONE"
+                } else {
+                    // Only revoke PRO status if the current tier was an official Play Store subscription product.
+                    // Never revoke if the user is in test mode, redeemed a promo/hardware key, or activated Test PRO!
+                    val isPlayStoreTier = prefs.subscriptionTier == SUB_DAILY ||
+                            prefs.subscriptionTier == SUB_WEEKLY ||
+                            prefs.subscriptionTier == SUB_MONTHLY
+                    if (isPlayStoreTier) {
+                        prefs.isProActivated = false
+                        prefs.subscriptionTier = "NONE"
+                    }
                 }
-                _isProSubscribed.postValue(prefs.isProActivated)
+                _isProSubscribed.postValue(prefs.isProActivated || prefs.subscriptionTier.startsWith("PRO"))
             }
         }
     }

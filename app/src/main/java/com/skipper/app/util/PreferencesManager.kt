@@ -49,7 +49,8 @@ class PreferencesManager(context: Context) {
 
     // Subscription & Free Trial state
     var isProActivated: Boolean
-        get() = prefs.getBoolean(KEY_IS_PRO, false)
+        get() = prefs.getBoolean(KEY_IS_PRO, false) ||
+                (prefs.getString(KEY_SUBSCRIPTION_TIER, "NONE")?.startsWith("PRO") == true)
         set(value) = prefs.edit().putBoolean(KEY_IS_PRO, value).apply()
 
     var remainingFreeSkips: Int
@@ -69,7 +70,7 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_LICENSE_KEY, value).apply()
 
     fun canSkip(): Boolean {
-        return isProActivated || remainingFreeSkips > 0
+        return isProActivated || subscriptionTier.startsWith("PRO") || remainingFreeSkips > 0
     }
 
     /**
@@ -77,7 +78,7 @@ class PreferencesManager(context: Context) {
      */
     fun consumeSkip(): Int {
         totalSkipsPerformed += 1
-        if (isProActivated) {
+        if (isProActivated || subscriptionTier.startsWith("PRO")) {
             return -1
         }
         val current = remainingFreeSkips
@@ -89,7 +90,15 @@ class PreferencesManager(context: Context) {
         return 0
     }
 
+    fun activateTestPro() {
+        isProActivated = true
+        subscriptionTier = "PRO_TEST"
+        remainingFreeSkips = 9999
+    }
+
     fun resetTrial() {
+        isProActivated = false
+        subscriptionTier = "NONE"
         remainingFreeSkips = 10
     }
 

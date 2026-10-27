@@ -45,24 +45,34 @@ class SubscriptionPaywallDialog(
                 BillingManager.SUB_DAILY -> "Daily VIP"
                 BillingManager.SUB_WEEKLY -> "Weekly Pass"
                 BillingManager.SUB_MONTHLY -> "Monthly Unlimited"
-                else -> "PRO Active"
+                "PRO_TEST" -> "Test PRO (Unlimited)"
+                "PRO_PROMO" -> "Promo Unlocked"
+                else -> "PRO Active (Unlimited)"
             }
-            binding.tvTrialStatus.text = "⭐ You are subscribed to $tierName"
+            binding.tvTrialStatus.text = "⭐ $tierName"
             binding.tvTrialStatus.setTextColor(Color.parseColor("#81C784"))
-            binding.btnSubscribe.text = "Manage in Google Play"
+            binding.btnSubscribe.text = "PRO Active"
+            binding.btnResetTrialDebug.text = "Reset to 10"
         } else if (remaining > 0) {
             binding.tvTrialStatus.text = "Free Trial: $remaining of 10 skips remaining"
             binding.tvTrialStatus.setTextColor(Color.parseColor("#E1BEE7"))
+            binding.btnResetTrialDebug.text = "Unlock PRO"
         } else {
             binding.tvTrialStatus.text = "⚠️ Free Trial Expired (10/10 skips used)"
             binding.tvTrialStatus.setTextColor(Color.parseColor("#FF8A80"))
+            binding.btnResetTrialDebug.text = "Unlock PRO"
         }
 
         binding.btnResetTrialDebug.setOnClickListener {
-            prefs.resetTrial()
+            if (prefs.isProActivated) {
+                prefs.resetTrial()
+                Toast.makeText(context, "Reset to Free Trial (10 skips).", Toast.LENGTH_SHORT).show()
+            } else {
+                prefs.activateTestPro()
+                Toast.makeText(context, "Unlimited Test PRO Activated! Enjoy testing.", Toast.LENGTH_SHORT).show()
+            }
             setupTrialStatus()
             onSubscriptionUpdated()
-            Toast.makeText(context, "Free trial reset to 10 skips for testing!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -146,11 +156,10 @@ class SubscriptionPaywallDialog(
                     .setTitle("Google Play Store Setup")
                     .setMessage("Live Play Store subscriptions will be active once published on Google Play.\n\nWould you like to activate a test PRO subscription right now?")
                     .setPositiveButton("Activate Test PRO") { _, _ ->
-                        prefs.isProActivated = true
-                        prefs.subscriptionTier = selectedProductId
+                        prefs.activateTestPro()
                         setupTrialStatus()
                         onSubscriptionUpdated()
-                        Toast.makeText(activity, "Test PRO Activated!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, "Test PRO Activated! Unlimited skips enabled.", Toast.LENGTH_SHORT).show()
                         dismiss()
                     }
                     .setNegativeButton("Wait for Play Store", null)

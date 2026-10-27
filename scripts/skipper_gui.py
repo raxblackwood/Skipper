@@ -266,16 +266,21 @@ class SkipperEngine:
 
         # Safeguard: If messages were exchanged (timestamps or "Me" / "Seen"), never auto-skip!
         has_chat_exchanges = any("Seen" in t or re.search(r"\b\d{1,2}:\d{2}\s*(AM|PM)?\b", t, re.I) for t in all_texts) or any(t.strip().lower() == "me" for t in all_texts)
+        is_chat_ended = any("Chat was ended" in t or "has left the chat" in t for t in all_texts)
+        has_profile_card = any("About partner" in t or "Interests" in t for t in all_texts)
+        if is_chat_ended and not has_profile_card:
+            has_chat_exchanges = True
+
         if has_chat_exchanges:
             return False
 
         # Case 1: Partner already disconnected
-        if any("Chat was ended" in t or "has left the chat" in t for t in all_texts):
+        if is_chat_ended:
             for node in all_nodes:
                 text = node.attrib.get("text", "") or node.attrib.get("content-desc", "")
                 if "New partner" in text:
                     bounds = parse_bounds(node.attrib.get("bounds", ""))
-                    if bounds and bounds[1] > (screen_h * 0.65):
+                    if bounds and bounds[1] > (screen_h * 0.60):
                         cx = (bounds[0] + bounds[2]) // 2
                         cy = (bounds[1] + bounds[3]) // 2
                         self.log_callback("INFO", "Partner skipped! Clicking 'New partner'...")
@@ -285,7 +290,7 @@ class SkipperEngine:
                         return True
 
         # Case 2: AI Bio & Keyword Detection (Fresh match who hasn't disconnected)
-        has_profile_card = any("About partner" in t or "Chat starts" in t for t in all_texts)
+        if has_profile_card:
 
         if has_profile_card:
             bio_text = " ".join([t for t in all_texts if "anon.chat" not in t and "New partner" not in t])

@@ -214,42 +214,31 @@ class AnonChatModule(
     /**
      * Checks if any chat messages or conversational exchanges have taken place.
      * In AnonChat, any message sent or received creates timestamp nodes (e.g. "3:44 PM", "Seen · 3:45 PM"),
-     * outgoing bubble indicators ("Me"), or message bubble content.
+     * outgoing bubble indicators ("Me"), or message read receipts ("Seen", "Delivered").
      */
     private fun hasChatExchanges(rootNode: AccessibilityNodeInfo): Boolean {
         val allTexts = NodeMatcher.collectAllText(rootNode)
 
-        // 1. Any message timestamps: e.g. "3:45 PM", "12:04 AM", "15:30"
-        val timeRegex = Regex("""\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b""")
+        // 1. Any message timestamps: e.g. "3:45 PM", "12:04 AM", "3:45 pm"
+        val timeRegex = Regex("""\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)\b""")
         if (allTexts.any { timeRegex.containsMatchIn(it) }) {
             return true
         }
 
-        // 2. Message status indicators: "Me", "Seen", or "Seen · 3:45 PM"
-        if (allTexts.any { it.equals("Me", ignoreCase = true) || it.startsWith("Seen", ignoreCase = true) }) {
+        // 2. Message status indicators: "Me", "Seen", or "Seen · 3:45 PM", "Delivered"
+        if (allTexts.any { it.equals("Me", ignoreCase = false) || it.startsWith("Seen", ignoreCase = true) || it.equals("Delivered", ignoreCase = true) }) {
             return true
         }
 
-        // 3. Any actual chat bubble texts outside of the fixed system profile elements
-        val systemTokens = setOf(
-            "new partner", "chat starts", "about partner", "interests",
-            "report", "end chat", "send friend request", "write a message...",
-            "chat was ended by your partner", "chat was ended by you", "chat was ended", "has left the chat"
-        )
-        val interestsList = setOf(
-            "games", "anime", "movies", "meme", "loneliness", "books",
-            "flirt", "travel", "music", "pets", "food", "art", "sports"
-        )
-
-        val nonSystemTexts = allTexts.filter { text ->
-            val lower = text.trim().lowercase()
-            !systemTokens.contains(lower) &&
-            !interestsList.contains(lower) &&
-            !lower.startsWith("about partner") &&
-            !lower.startsWith("interests")
+        // 3. If chat was ended, but the initial profile card is no longer visible,
+        // then the screen was previously filled with active conversation messages!
+        val hasProfileCard = allTexts.any { it.contains("About partner", ignoreCase = true) || it.contains("Interests", ignoreCase = true) }
+        val isChatEnded = allTexts.any { it.contains("Chat was ended", ignoreCase = true) || it.contains("has left the chat", ignoreCase = true) }
+        if (isChatEnded && !hasProfileCard) {
+            return true
         }
 
-        return nonSystemTexts.size > 1
+        return false
     }
 
     private fun extractBioAndProfileText(rootNode: AccessibilityNodeInfo): String {
@@ -314,9 +303,9 @@ class AnonChatModule(
             val bounds = Rect()
             node.getBoundsInScreen(bounds)
 
-            // Must be strictly in the lower region of the screen (> 65% of display height)
+            // Must be strictly in the lower region of the screen (> 60% of display height)
             // This strictly excludes the top header title/avatar at ~6% of display height
-            if (bounds.top > (displayHeight * 0.65)) {
+            if (bounds.top > (displayHeight * 0.60)) {
                 if (node.isClickable) {
                     return node
                 }
@@ -324,7 +313,7 @@ class AnonChatModule(
                 if (parentTarget != null) {
                     val parentBounds = Rect()
                     parentTarget.getBoundsInScreen(parentBounds)
-                    if (parentBounds.top > (displayHeight * 0.65)) {
+                    if (parentBounds.top > (displayHeight * 0.60)) {
                         return parentTarget
                     }
                 }
