@@ -21,15 +21,16 @@ It includes safety guards preventing auto-skips once active conversational excha
 ## 3. Milestones & Current Focus
 
 - Prepared full Google Play Store release kit and metadata documentation (`PLAY_STORE_METADATA.md`).
-- Verified signed release Android App Bundle `Skipper.aab` (RSA 2048-bit, valid until 2054, targetSdk 35).
+- Verified signed release Android App Bundle `Skipper.aab` (RSA 2048-bit, valid until 2054, targetSdk 36).
 - Generated complete store listing visual assets: high-resolution icon (512x512), feature graphic (1024x500), and 4 showcase screenshots (1080x1920).
 - Published comprehensive `PRIVACY_POLICY.md` strictly adhering to Google Play User Data and Accessibility Service disclosure requirements.
 - Completed Data Safety questionnaire and Accessibility Service declaration answers for Google review.
 - Fixed false-positive conversational exchange detection and resolved test subscription persistence.
 - Fixed `applicationId` casing to `com.Skipper.app` to match Google Play Console registered package name.
 - Upgraded Play Billing Library to v8.0.0 and updated BillingClient API implementations.
-- Bumped `versionCode` to 5 (`v1.2.2`) to resolve duplicate version code rejections on Play Console.
-- Built clean release bundle and placed it at `builds/Skipper_v5_release.aab` and workspace root `Skipper.aab`.
+- Upgraded `compileSdk = 36` and `targetSdk = 36` to satisfy Google Play's required Android API level 36 target.
+- Bumped `versionCode` to 6 (`v1.2.3`).
+- Built clean release bundle and placed it at `builds/Skipper_v6_api36.aab`, `builds/Skipper_latest.aab`, and workspace root `Skipper.aab`.
 
 ## 4. Key Invariants & Safeguards
 
