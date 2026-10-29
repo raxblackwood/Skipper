@@ -14,7 +14,7 @@ It includes safety guards preventing auto-skips once active conversational excha
 
 - **Stack**: Android (Kotlin, AndroidX, Material Design 3, Coroutines, SharedPreferences).
 - **Automation Engine**: `AccessibilityService` node hierarchy traversal and gesture dispatch.
-- **Billing & Licensing Engine**: Google Play Billing Library v7 with local test mode and cryptographic hardware-bound promo key validation.
+- **Billing & Licensing Engine**: Google Play Billing Library v8 with local test mode and cryptographic hardware-bound promo key validation.
 - **Companion Engine**: Python desktop ADB script (`scripts/skipper_adb.py`, `scripts/skipper_gui.py`).
 - **Target Integrations**: AnonChat (`com.anonchat.android`), Chatous (`com.chatous`).
 
@@ -26,11 +26,10 @@ It includes safety guards preventing auto-skips once active conversational excha
 - Published comprehensive `PRIVACY_POLICY.md` strictly adhering to Google Play User Data and Accessibility Service disclosure requirements.
 - Completed Data Safety questionnaire and Accessibility Service declaration answers for Google review.
 - Fixed false-positive conversational exchange detection and resolved test subscription persistence.
-- Fixed `applicationId` casing from `com.skipper.app` to `com.Skipper.app` to match Google Play Console registered package name.
-- Created `builds/` output folder in workspace root; built and placed signed release AAB at `builds/Skipper.aab`.
-- Upgraded Play Billing Library from v7.0.0 to v8.0.0 and targetSdk from 35 to 36 (both required by Play Console).
-- Fixed Billing v8 API breaking changes: `enablePendingPurchases(PendingPurchasesParams)` and `onProductDetailsResponse` now receives `QueryProductDetailsResult`.
-- Bumped versionCode 1 → 2 → 3, versionName → "1.2.0" (Play Console rejected codes 1 and 2 as already used).
+- Fixed `applicationId` casing to `com.Skipper.app` to match Google Play Console registered package name.
+- Upgraded Play Billing Library to v8.0.0 and updated BillingClient API implementations.
+- Bumped `versionCode` to 5 (`v1.2.2`) to resolve duplicate version code rejections on Play Console.
+- Built clean release bundle and placed it at `builds/Skipper_v5_release.aab` and workspace root `Skipper.aab`.
 
 ## 4. Key Invariants & Safeguards
 
