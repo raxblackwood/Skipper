@@ -9,7 +9,10 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
@@ -41,7 +44,7 @@ class BillingManager(
 
     private var billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
-        .enablePendingPurchases()
+        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
         .build()
 
     fun startConnection() {
@@ -80,15 +83,20 @@ class BillingManager(
             .setProductList(productList)
             .build()
 
-        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                val map = productDetailsList.associateBy { it.productId }
-                _productDetailsMap.postValue(map)
-                Logger.log("Billing", "Products Loaded", "Loaded ${map.size} subscription tier(s) from Play Store.")
-            } else {
-                Logger.log("Billing", "Query Error", "Failed to load products: ${billingResult.debugMessage}")
+        billingClient.queryProductDetailsAsync(params, object : ProductDetailsResponseListener {
+            override fun onProductDetailsResponse(
+                billingResult: BillingResult,
+                result: QueryProductDetailsResult
+            ) {
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    val map = result.productDetailsList.associateBy { it.productId }
+                    _productDetailsMap.postValue(map)
+                    Logger.log("Billing", "Products Loaded", "Loaded ${map.size} subscription tier(s) from Play Store.")
+                } else {
+                    Logger.log("Billing", "Query Error", "Failed to load products: ${billingResult.debugMessage}")
+                }
             }
-        }
+        })
     }
 
     fun queryActivePurchases() {

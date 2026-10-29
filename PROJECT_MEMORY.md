@@ -26,6 +26,11 @@ It includes safety guards preventing auto-skips once active conversational excha
 - Published comprehensive `PRIVACY_POLICY.md` strictly adhering to Google Play User Data and Accessibility Service disclosure requirements.
 - Completed Data Safety questionnaire and Accessibility Service declaration answers for Google review.
 - Fixed false-positive conversational exchange detection and resolved test subscription persistence.
+- Fixed `applicationId` casing from `com.skipper.app` to `com.Skipper.app` to match Google Play Console registered package name.
+- Created `builds/` output folder in workspace root; built and placed signed release AAB at `builds/Skipper.aab`.
+- Upgraded Play Billing Library from v7.0.0 to v8.0.0 and targetSdk from 35 to 36 (both required by Play Console).
+- Fixed Billing v8 API breaking changes: `enablePendingPurchases(PendingPurchasesParams)` and `onProductDetailsResponse` now receives `QueryProductDetailsResult`.
+- Bumped versionCode 1 → 2 → 3, versionName → "1.2.0" (Play Console rejected codes 1 and 2 as already used).
 
 ## 4. Key Invariants & Safeguards
 
