@@ -27,8 +27,6 @@ class AppSectionAdapter(
         val item = items[position]
         with(holder.binding) {
             tvAppName.text = item.name
-            tvAppDescription.text = item.description
-            tvActiveRule.text = item.summaryRule
             
             // Avoid triggering listener when updating checked state
             switchEnabled.setOnCheckedChangeListener(null)
@@ -36,10 +34,6 @@ class AppSectionAdapter(
             switchEnabled.setOnCheckedChangeListener { _, isChecked ->
                 item.isEnabled = isChecked
                 onToggle(item, isChecked)
-            }
-
-            btnConfigure.setOnClickListener {
-                onConfigure(item)
             }
 
             root.setOnClickListener {

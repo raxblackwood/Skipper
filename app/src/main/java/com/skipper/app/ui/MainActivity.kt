@@ -3,10 +3,12 @@ package com.skipper.app.ui
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.skipper.app.R
 import com.skipper.app.SkipperApp
@@ -31,6 +33,19 @@ class MainActivity : AppCompatActivity() {
         val prefs = app.preferencesManager
         val engine = app.automationEngine
 
+        // Three-panel menu button toggles the side drawer for logs
+        binding.btnOpenMenu.setOnClickListener {
+            binding.drawerLayout.openDrawer(GravityCompat.START)
+        }
+
+        binding.drawerLogsLayout.btnCloseDrawer.setOnClickListener {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        }
+
+        binding.drawerLogsLayout.btnClearLogsDrawer.setOnClickListener {
+            Logger.clear()
+        }
+
         // Master Switch setup
         binding.switchMaster.isChecked = prefs.isMasterSwitchEnabled
         binding.switchMaster.setOnCheckedChangeListener { _, isChecked ->
@@ -38,29 +53,30 @@ class MainActivity : AppCompatActivity() {
             Logger.log("Skipper", "Master Switch", if (isChecked) "Automation enabled" else "Automation paused")
         }
 
-        // Accessibility Service check & button
-        binding.btnEnableService.setOnClickListener {
+        // Tapping the status indicator / text opens Accessibility Settings
+        val openSettingsAction = {
             if (!prefs.isAccessibilityDisclosureAccepted) {
                 ProminentDisclosureDialog(this, prefs) {
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    startActivity(intent)
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 }.show()
             } else {
-                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                startActivity(intent)
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
         }
+        binding.indicatorStatus.setOnClickListener { openSettingsAction() }
+        binding.tvServiceStatus.setOnClickListener { openSettingsAction() }
 
         fun updateServiceStatusUI(isConnected: Boolean) {
             val active = isConnected || isAccessibilityServiceEnabled()
+            val dot = binding.indicatorStatus.background as? GradientDrawable
             if (active) {
-                binding.indicatorStatus.setBackgroundColor(Color.parseColor("#4CAF50"))
+                dot?.setColor(Color.parseColor("#4CAF50"))
                 binding.tvServiceStatus.text = getString(R.string.service_active)
-                binding.btnEnableService.text = "Settings"
+                binding.tvServiceStatus.setTextColor(Color.parseColor("#81C784"))
             } else {
-                binding.indicatorStatus.setBackgroundColor(Color.parseColor("#F44336"))
-                binding.tvServiceStatus.text = getString(R.string.service_inactive)
-                binding.btnEnableService.text = "Enable"
+                dot?.setColor(Color.parseColor("#F44336"))
+                binding.tvServiceStatus.text = "Tap to enable accessibility in Settings"
+                binding.tvServiceStatus.setTextColor(Color.parseColor("#E57373"))
             }
         }
 
@@ -111,7 +127,7 @@ class MainActivity : AppCompatActivity() {
             SubscriptionPaywallDialog(this) { updateSubscriptionUI() }.show()
         }
 
-        // App Sections RecyclerView
+        // App Sections RecyclerView (Only App Name + Switch; Clicking opens app details)
         appSectionAdapter = AppSectionAdapter(
             items = engine.getAllAppSections(),
             onToggle = { section, isEnabled ->
@@ -131,17 +147,13 @@ class MainActivity : AppCompatActivity() {
         binding.rvAppSections.layoutManager = LinearLayoutManager(this)
         binding.rvAppSections.adapter = appSectionAdapter
 
-        // Live Logs RecyclerView
+        // Live Logs inside Side Navigation Drawer
         logAdapter = LogAdapter()
-        binding.rvLogs.layoutManager = LinearLayoutManager(this)
-        binding.rvLogs.adapter = logAdapter
+        binding.drawerLogsLayout.rvDrawerLogs.layoutManager = LinearLayoutManager(this)
+        binding.drawerLogsLayout.rvDrawerLogs.adapter = logAdapter
 
         Logger.logsLiveData.observe(this) { logs ->
             logAdapter.updateLogs(logs)
-        }
-
-        binding.btnClearLogs.setOnClickListener {
-            Logger.clear()
         }
     }
 
@@ -152,14 +164,15 @@ class MainActivity : AppCompatActivity() {
         app.billingManager.queryActivePurchases()
 
         val active = SkipperAccessibilityService.instance != null || isAccessibilityServiceEnabled()
+        val dot = binding.indicatorStatus.background as? GradientDrawable
         if (active) {
-            binding.indicatorStatus.setBackgroundColor(Color.parseColor("#4CAF50"))
+            dot?.setColor(Color.parseColor("#4CAF50"))
             binding.tvServiceStatus.text = getString(R.string.service_active)
-            binding.btnEnableService.text = "Settings"
+            binding.tvServiceStatus.setTextColor(Color.parseColor("#81C784"))
         } else {
-            binding.indicatorStatus.setBackgroundColor(Color.parseColor("#F44336"))
-            binding.tvServiceStatus.text = getString(R.string.service_inactive)
-            binding.btnEnableService.text = "Enable"
+            dot?.setColor(Color.parseColor("#F44336"))
+            binding.tvServiceStatus.text = "Tap to enable accessibility in Settings"
+            binding.tvServiceStatus.setTextColor(Color.parseColor("#E57373"))
         }
     }
 

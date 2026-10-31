@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Skipper</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #181b24;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --section-heading: #79c0ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .app-badge {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 4px 12px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .last-updated {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--section-heading);
+      margin-top: 32px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: #c9d1d9;
+    }
+
+    ul {
+      margin-left: 24px;
+      margin-bottom: 18px;
+    }
+
+    li {
+      margin-bottom: 8px;
+      color: #c9d1d9;
+    }
+
+    li strong {
+      color: var(--text);
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.88em;
+      background: rgba(110, 118, 129, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #e6edf3;
+    }
+
+    .highlight-box {
+      background: rgba(88, 166, 255, 0.08);
+      border-left: 4px solid var(--accent);
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .highlight-box p {
+      margin-bottom: 0;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 24px 18px;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="app-badge">Skipper Utility App</div>
+      <h1>Privacy Policy for Skipper</h1>
+      <div class="last-updated">Last updated: October 31, 2026</div>
+    </header>
+
+    <main>
+      <p>Skipper ("we", "our", or "the app") respects your privacy and is committed to protecting your personal data. This Privacy Policy describes how Skipper operates, how permissions are utilized, and our strict commitment to zero data collection.</p>
+
+      <h2>1. Zero Data Collection & Local On-Device Operation</h2>
+      <div class="highlight-box">
+        <p><strong>100% On-Device:</strong> Skipper does not collect, store, transmit, or share any personal information, messages, contact details, device identifiers, or usage logs.</p>
+      </div>
+      <p>All automation heuristics, keyword evaluations, and UI node analyses are performed completely locally on your device within your phone's temporary memory. No screen contents or user inputs ever leave your phone or are sent to any external server, cloud service, or third-party analytics provider.</p>
+
+      <h2>2. Android Accessibility Service API Usage & Disclosure</h2>
+      <p>Skipper uses the Android Accessibility Service API (<code>android.permission.BIND_ACCESSIBILITY_SERVICE</code>) strictly to deliver its core automated skipping functionality.</p>
+
+      <h3>A. Purpose of Accessibility Usage</h3>
+      <ul>
+        <li><strong>Screen Status Inspection:</strong> Skipper observes window content events within user-selected anonymous chat applications (such as AnonChat) to detect when a partner has disconnected or when user-configured criteria are met.</li>
+        <li><strong>Automated Interaction:</strong> Skipper dispatches simulated tap gestures on the designated "New partner" action button so you do not have to manually tap repeatedly through hundreds of empty or disconnected partner screens.</li>
+        <li><strong>Safety Safeguards:</strong> Skipper detects conversational exchanges (message timestamps, sent quotes, and read receipts) to automatically block skips whenever an active conversation is underway, protecting your active chats.</li>
+      </ul>
+
+      <h3>B. Accessibility Guarantees</h3>
+      <ul>
+        <li>The Accessibility Service operates exclusively when you enable the automation switch in Skipper.</li>
+        <li>The service <strong>NEVER</strong> monitors, captures, stores, or transmits personal chat messages, typed text, passwords, financial details, or payment credentials.</li>
+        <li>The service is never used to circumvent Android system security, prevent app uninstallation, or display unauthorized overlays or advertisements.</li>
+      </ul>
+
+      <h2>3. Google Play Billing</h2>
+      <p>Skipper offers optional in-app subscriptions and passes through Google Play In-App Billing. All payment transactions, credit card processing, and billing renewals are handled directly and securely by Google Play. Skipper never accesses, processes, or stores your credit card numbers, bank accounts, or billing addresses.</p>
+
+      <h2>4. Permissions Used</h2>
+      <ul>
+        <li><code>android.permission.BIND_ACCESSIBILITY_SERVICE</code>: Used solely to detect partner disconnect status and automate skipping taps.</li>
+        <li><code>android.permission.VIBRATE</code>: Provides subtle haptic feedback when a skip or trigger executes (if enabled).</li>
+        <li><code>android.permission.INTERNET</code>: Required solely for Google Play Billing subscription verification via the Google Play Store client.</li>
+        <li><code>com.android.vending.BILLING</code>: Allows users to manage and purchase optional subscriptions through the Google Play Store.</li>
+      </ul>
+
+      <h2>5. Children's Privacy</h2>
+      <p>Skipper does not knowingly collect or solicit any information from children under the age of 13. The app is intended for general audience users seeking utility automation on supported chat platforms.</p>
+
+      <h2>6. Changes to This Privacy Policy</h2>
+      <p>We may periodically update our Privacy Policy to reflect app updates or regulatory requirements. Any changes will be posted directly on this page with an updated revision date.</p>
+
+      <h2>7. Contact Us</h2>
+      <p>If you have any questions or feedback regarding this Privacy Policy or Skipper's accessibility implementation, please contact us via our GitHub repository or support email:</p>
+      <ul>
+        <li><strong>Repository:</strong> <a href="https://github.com/raxblackwood/Skipper">https://github.com/raxblackwood/Skipper</a></li>
+        <li><strong>Support Email:</strong> <a href="mailto:ramankumarat@gmail.com">ramankumarat@gmail.com</a></li>
+      </ul>
+    </main>
+
+    <footer>
+      &copy; 2026 Skipper. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
