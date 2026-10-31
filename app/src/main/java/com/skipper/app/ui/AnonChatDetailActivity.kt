@@ -80,7 +80,7 @@ class AnonChatDetailActivity : AppCompatActivity() {
             finish()
         }
 
-        binding.btnSave.setOnClickListener {
+        val saveAction = {
             val isEnabled = binding.switchAnonChatEnabled.isChecked
             val autoSkipMale = binding.switchAutoSkipMale.isChecked
             val targetGender = if (binding.rbSkipFemaleAnonChat.isChecked) "FEMALE" else "MALE"
@@ -100,6 +100,9 @@ class AnonChatDetailActivity : AppCompatActivity() {
             Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show()
             finish()
         }
+
+        binding.btnTopSave.setOnClickListener { saveAction() }
+        binding.btnSave.setOnClickListener { saveAction() }
     }
 
     private fun populateChips() {

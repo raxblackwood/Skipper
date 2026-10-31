@@ -35,6 +35,7 @@ It includes safety guards preventing auto-skips once active conversational excha
 - Created standalone HTML privacy policy page (`index.html`) deployed to GitHub Pages (`https://raxblackwood.github.io/Skipper/`) to eliminate Google Play automated crawler rejection of raw repository blob URLs.
 - Added three-dot options menu (`ic_more_vert.xml`) to each app card with popup actions ("Configure Rules & Triggers", "Turn On/Off").
 - Consolidated AnonChat configuration by moving Automatic Keyword Skipping and Never-Skip Protected Whitelist directly into the "Target Gender to Skip" card.
+- Pinned top action header in detail activities featuring a persistent "Save" button so users can save preferences instantly without scrolling.
 
 ## 4. Key Invariants & Safeguards
 

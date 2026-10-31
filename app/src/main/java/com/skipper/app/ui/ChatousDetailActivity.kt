@@ -35,7 +35,7 @@ class ChatousDetailActivity : AppCompatActivity() {
             finish()
         }
 
-        binding.btnSave.setOnClickListener {
+        val saveAction = {
             val isEnabled = binding.switchChatousEnabled.isChecked
             val skipMale = binding.switchSkipMale.isChecked
             val targetGender = if (binding.rbSkipFemaleChatous.isChecked) "FEMALE" else "MALE"
@@ -51,5 +51,8 @@ class ChatousDetailActivity : AppCompatActivity() {
             Toast.makeText(this, "Chatous Settings Saved!", Toast.LENGTH_SHORT).show()
             finish()
         }
+
+        binding.btnTopSave.setOnClickListener { saveAction() }
+        binding.btnSave.setOnClickListener { saveAction() }
     }
 }
