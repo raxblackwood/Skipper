@@ -31,6 +31,8 @@ It includes safety guards preventing auto-skips once active conversational excha
 - Upgraded `compileSdk = 36` and `targetSdk = 36` to satisfy Google Play's required Android API level 36 target.
 - Bumped `versionCode` to 6 (`v1.2.3`).
 - Built clean release bundle and placed it at `builds/Skipper_v6_api36.aab`, `builds/Skipper_latest.aab`, and workspace root `Skipper.aab`.
+- Streamlined and decluttered home screen UI: reduced status indicator to a discreet dynamic status dot beside top brand title, compacted trial banner, simplified app section cards, and moved trigger logs into a side navigation drawer.
+- Created standalone HTML privacy policy page (`index.html`) deployed to GitHub Pages (`https://raxblackwood.github.io/Skipper/`) to eliminate Google Play automated crawler rejection of raw repository blob URLs.
 
 ## 4. Key Invariants & Safeguards
 
