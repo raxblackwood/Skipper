@@ -141,7 +141,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Gender Target Selection Card -->
+        <!-- Target Gender & Bio Filtering Card -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -160,67 +160,50 @@
             app:strokeColor="#3A3842"
             app:strokeWidth="1dp">
 
-            <RadioGroup
-                android:id="@+id/rgAnonChatGender"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="12dp">
-
-                <RadioButton
-                    android:id="@+id/rbSkipMaleAnonChat"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:paddingVertical="6dp"
-                    android:text="Skip Male Profiles (Default)\nAuto-skips boys/men; keeps females and undetermined partners"
-                    android:textColor="@color/on_surface"
-                    android:textSize="14sp" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#2E2B35" />
-
-                <RadioButton
-                    android:id="@+id/rbSkipFemaleAnonChat"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingVertical="6dp"
-                    android:text="Skip Female Profiles\nAuto-skips girls/women; keeps males and undetermined partners"
-                    android:textColor="@color/on_surface"
-                    android:textSize="14sp" />
-            </RadioGroup>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Custom Keyword Manager Card -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp"
-            android:text="Automatic Keyword Skipping"
-            android:textColor="@color/on_surface"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="#3A3842"
-            app:strokeWidth="1dp">
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <!-- 1. Gender Selection RadioGroup -->
+                <RadioGroup
+                    android:id="@+id/rgAnonChatGender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <RadioButton
+                        android:id="@+id/rbSkipMaleAnonChat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:paddingVertical="4dp"
+                        android:text="Skip Male Profiles (Default)\nAuto-skips boys/men; keeps females &amp; unknown"
+                        android:textColor="@color/on_surface"
+                        android:textSize="13.5sp" />
+
+                    <RadioButton
+                        android:id="@+id/rbSkipFemaleAnonChat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:paddingVertical="4dp"
+                        android:text="Skip Female Profiles\nAuto-skips girls/women; keeps males &amp; unknown"
+                        android:textColor="@color/on_surface"
+                        android:textSize="13.5sp" />
+                </RadioGroup>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="#2E2B35" />
+
+                <!-- 2. Automatic Keyword Skipping -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Custom Skip Keywords"
+                    android:text="Automatic Keyword Skipping"
                     android:textColor="@color/on_surface"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -229,14 +212,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Tip: Adding 'M' automatically skips M, M18, M21, M23, 21M, M here without typing each number!"
+                    android:text="Adding 'M' automatically skips M, M18, M21, 21M, etc."
                     android:textColor="@color/on_surface_variant"
                     android:textSize="12sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -244,7 +227,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="Add skip keyword (e.g. M, male, boy)">
+                        android:hint="Add skip keyword (e.g. M, boy)">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etNewKeyword"
@@ -267,42 +250,21 @@
                     android:id="@+id/chipGroupKeywords"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     app:chipSpacing="6dp" />
 
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="#2E2B35" />
 
-        <!-- Never-Skip / Protected Whitelist Card -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp"
-            android:text="🛡️ Never-Skip Words (Protected Whitelist)"
-            android:textColor="#81C784"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="#3A3842"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
+                <!-- 3. Never-Skip Words (Protected Whitelist) -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Protected Profile Words"
-                    android:textColor="@color/on_surface"
+                    android:text="🛡️ Never-Skip Words (Protected Whitelist)"
+                    android:textColor="#81C784"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -310,14 +272,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Recheck Rule: If ANY of these words are found in the profile, SKIP IS CANCELLED (Never skipped)."
+                    android:text="If ANY of these words are found in the profile, SKIP IS CANCELLED."
                     android:textColor="@color/on_surface_variant"
                     android:textSize="12sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -325,7 +287,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="Add protected word (e.g. female, girl, f)">
+                        android:hint="Add protected word (e.g. female, girl)">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etNewNeverSkipKeyword"
@@ -348,7 +310,7 @@
                     android:id="@+id/chipGroupNeverSkipKeywords"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     app:chipSpacing="6dp" />
 
             </LinearLayout>

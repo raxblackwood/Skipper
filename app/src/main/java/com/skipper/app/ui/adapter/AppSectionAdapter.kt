@@ -2,6 +2,7 @@ package com.skipper.app.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
 import com.skipper.app.databinding.ItemAppSectionBinding
 import com.skipper.app.model.AppSection
@@ -27,6 +28,7 @@ class AppSectionAdapter(
         val item = items[position]
         with(holder.binding) {
             tvAppName.text = item.name
+            tvAppSubtitle.text = if (item.summaryRule.isNotBlank()) item.summaryRule else "Tap to configure rules & triggers"
             
             // Avoid triggering listener when updating checked state
             switchEnabled.setOnCheckedChangeListener(null)
@@ -36,8 +38,29 @@ class AppSectionAdapter(
                 onToggle(item, isChecked)
             }
 
+            // Tapping anywhere on the card opens configuration
             root.setOnClickListener {
                 onConfigure(item)
+            }
+
+            // Tapping the three-dot menu shows options
+            btnMenu.setOnClickListener { view ->
+                val popup = PopupMenu(view.context, view)
+                popup.menu.add(0, 1, 0, "Configure Rules & Triggers")
+                popup.menu.add(0, 2, 1, if (item.isEnabled) "Turn Off" else "Turn On")
+                popup.setOnMenuItemClickListener { menuItem ->
+                    when (menuItem.itemId) {
+                        1 -> onConfigure(item)
+                        2 -> {
+                            val newState = !item.isEnabled
+                            item.isEnabled = newState
+                            switchEnabled.isChecked = newState
+                            onToggle(item, newState)
+                        }
+                    }
+                    true
+                }
+                popup.show()
             }
         }
     }

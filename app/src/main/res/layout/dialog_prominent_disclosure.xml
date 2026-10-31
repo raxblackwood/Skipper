@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:lineSpacingExtra="2dp"
-                android:text="• Inspecting screen status in your selected apps (AnonChat &amp; Chatous) to detect when a partner disconnects or matches.\n• Emulating taps on the 'New partner' or 'SKIP' buttons so you don't have to manually click hundreds of times."
+                android:text="• Inspecting screen status in your selected apps and automation profiles to detect action buttons and trigger conditions.\n• Emulating automated taps on designated action buttons or screen targets so you don't have to manually click repeatedly."
                 android:textColor="@color/on_surface"
                 android:textSize="12sp" />
 

@@ -1,20 +1,20 @@
 <resources>
     <string name="app_name">Skipper</string>
-    <string name="accessibility_service_name">Skipper Automation Service</string>
-    <string name="accessibility_service_description">Skipper monitors app states and safely automates repetitive actions based on customizable triggers without accidental misclicks.</string>
+    <string name="accessibility_service_name">Skipper Auto-Click &amp; Skip Service</string>
+    <string name="accessibility_service_description">Skipper automates repetitive clicks, skips, and screen actions based on user-configured rules.</string>
     
     <!-- Main screen -->
     <string name="service_status_title">Automation Engine</string>
     <string name="service_active">Running &amp; Ready</string>
     <string name="service_inactive">Disabled in Settings</string>
     <string name="enable_service_btn">Enable Accessibility Service</string>
-    <string name="app_sections_title">Automated Apps</string>
-    <string name="app_sections_subtitle">Tap an app to configure its triggers and rules</string>
+    <string name="app_sections_title">Automation Profiles</string>
+    <string name="app_sections_subtitle">Tap an app or mode to configure its triggers and rules</string>
     <string name="live_logs_title">Live Trigger Log</string>
     <string name="clear_logs">Clear</string>
     
     <!-- AnonChat details -->
-    <string name="anonchat_title">AnonChat Automator</string>
+    <string name="anonchat_title">AnonChat Profile</string>
     <string name="anonchat_desc">Auto-skips when partner immediately disconnects on profile</string>
     <string name="setting_enabled">Enable Automation for AnonChat</string>
     <string name="setting_instant_skip_only">Instant Skips Only (Screen 4)</string>

@@ -33,6 +33,8 @@ It includes safety guards preventing auto-skips once active conversational excha
 - Built clean release bundle and placed it at `builds/Skipper_v6_api36.aab`, `builds/Skipper_latest.aab`, and workspace root `Skipper.aab`.
 - Streamlined and decluttered home screen UI: reduced status indicator to a discreet dynamic status dot beside top brand title, compacted trial banner, simplified app section cards, and moved trigger logs into a side navigation drawer.
 - Created standalone HTML privacy policy page (`index.html`) deployed to GitHub Pages (`https://raxblackwood.github.io/Skipper/`) to eliminate Google Play automated crawler rejection of raw repository blob URLs.
+- Added three-dot options menu (`ic_more_vert.xml`) to each app card with popup actions ("Configure Rules & Triggers", "Turn On/Off").
+- Consolidated AnonChat configuration by moving Automatic Keyword Skipping and Never-Skip Protected Whitelist directly into the "Target Gender to Skip" card.
 
 ## 4. Key Invariants & Safeguards
 

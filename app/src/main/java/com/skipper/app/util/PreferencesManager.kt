@@ -37,6 +37,12 @@ class PreferencesManager(context: Context) {
         private const val KEY_CHATOUS_SKIP_MALE = "chatous_skip_male"
         private const val KEY_CHATOUS_CLICK_DELAY = "chatous_click_delay"
         private const val KEY_CHATOUS_COOLDOWN = "chatous_cooldown"
+
+        // Universal Auto-Clicker Keys
+        private const val KEY_AUTOCLICKER_ENABLED = "autoclicker_enabled"
+        private const val KEY_AUTOCLICKER_INTERVAL = "autoclicker_interval"
+        private const val KEY_AUTOCLICKER_COOLDOWN = "autoclicker_cooldown"
+        private const val KEY_AUTOCLICKER_MODE = "autoclicker_mode"
     }
 
     var isMasterSwitchEnabled: Boolean
@@ -159,4 +165,21 @@ class PreferencesManager(context: Context) {
     var chatousCooldownMs: Long
         get() = prefs.getLong(KEY_CHATOUS_COOLDOWN, 1500L)
         set(value) = prefs.edit().putLong(KEY_CHATOUS_COOLDOWN, value).apply()
+
+    // Universal Auto-Clicker Settings
+    var isAutoClickerEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTOCLICKER_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTOCLICKER_ENABLED, value).apply()
+
+    var autoClickIntervalMs: Long
+        get() = prefs.getLong(KEY_AUTOCLICKER_INTERVAL, 500L)
+        set(value) = prefs.edit().putLong(KEY_AUTOCLICKER_INTERVAL, value).apply()
+
+    var autoClickCooldownMs: Long
+        get() = prefs.getLong(KEY_AUTOCLICKER_COOLDOWN, 1000L)
+        set(value) = prefs.edit().putLong(KEY_AUTOCLICKER_COOLDOWN, value).apply()
+
+    var autoClickMode: String
+        get() = prefs.getString(KEY_AUTOCLICKER_MODE, "SMART_BUTTON") ?: "SMART_BUTTON"
+        set(value) = prefs.edit().putString(KEY_AUTOCLICKER_MODE, value).apply()
 }

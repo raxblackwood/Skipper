@@ -132,6 +132,7 @@ class MainActivity : AppCompatActivity() {
             items = engine.getAllAppSections(),
             onToggle = { section, isEnabled ->
                 when (section.id) {
+                    "autoclicker" -> prefs.isAutoClickerEnabled = isEnabled
                     "anonchat" -> prefs.isAnonChatEnabled = isEnabled
                     "chatous" -> prefs.isChatousEnabled = isEnabled
                 }
@@ -139,6 +140,7 @@ class MainActivity : AppCompatActivity() {
             },
             onConfigure = { section ->
                 when (section.id) {
+                    "autoclicker" -> startActivity(Intent(this, AutoClickerDetailActivity::class.java))
                     "anonchat" -> startActivity(Intent(this, AnonChatDetailActivity::class.java))
                     "chatous" -> startActivity(Intent(this, ChatousDetailActivity::class.java))
                 }

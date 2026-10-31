@@ -3,6 +3,7 @@ package com.skipper.app.engine
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.skipper.app.model.AppSection
+import com.skipper.app.modules.autoclicker.AutoClickerModule
 import com.skipper.app.modules.anonchat.AnonChatModule
 import com.skipper.app.modules.chatous.ChatousModule
 import com.skipper.app.service.SkipperAccessibilityService
